@@ -24,6 +24,14 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private int repeatFromTiming;
         private bool repeat;
 
+        /// <summary>
+        /// Build the waveform texture ahead of the first pause. Safe to call while inactive.
+        /// </summary>
+        public void PrepareWaveform(AudioClip clip)
+        {
+            timeline.LoadWaveformFor(clip);
+        }
+
         private void Awake()
         {
             gameplayData.AudioClip.OnValueChange += OnClipChange;

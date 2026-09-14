@@ -15,6 +15,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private readonly int lengthShaderId = Shader.PropertyToID("_AudioLength");
         private readonly int repeatFromShaderId = Shader.PropertyToID("_RepeatSampleFrom");
         private readonly int repeatToShaderId = Shader.PropertyToID("_RepeatSampleTo");
+        private AudioClip loadedClip;
 
         public void OnPointerClick(PointerEventData eventData) => OnDrag(eventData);
 
@@ -29,6 +30,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         public void LoadWaveformFor(AudioClip clip)
         {
+            if (clip == null || clip == loadedClip)
+            {
+                return;
+            }
+
             if (image.texture != null)
             {
                 Destroy(image.texture);
@@ -39,6 +45,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             image.material.mainTexture = texture;
             image.enabled = true;
             image.material.SetFloat(lengthShaderId, WaveformGenerator.SecondToSample(clip.length, clip));
+            loadedClip = clip;
         }
 
         public void SetRepeatRange(bool repeatOn, int repeatFromTiming, int repeatToTiming)
