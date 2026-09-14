@@ -26,7 +26,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         public PracticeLoop Loop => loop;
 
-        private BeatGrid Grid
+        /// <summary>
+        /// Gets the bar and beat grid of timing group 0, rebuilt after chart or timing edits.
+        /// </summary>
+        public BeatGrid Grid
         {
             get
             {
@@ -126,6 +129,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void SetRepeatTo()
         {
             loop.SetTo(SnapToBar(Services.Audio.AudioTiming));
+            UpdateRepeatRange();
+        }
+
+        /// <summary>
+        /// Move one loop edge to an audio timing, snapped to the nearest bar. The edge never crosses the other one.
+        /// </summary>
+        public void DragLoopEdge(bool from, int audioTiming)
+        {
+            int snapped = SnapToBar(audioTiming);
+            if (from)
+            {
+                loop.MoveFrom(snapped);
+            }
+            else
+            {
+                loop.MoveTo(snapped);
+            }
+
             UpdateRepeatRange();
         }
 
