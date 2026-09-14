@@ -83,5 +83,38 @@ namespace Tests.Unit
             Assert.IsTrue(empty.IsEmpty);
             Assert.AreEqual(1234, empty.SnapToBar(1234));
         }
+
+        [Test]
+        public void LinesWithinOneTempo()
+        {
+            var lines = new List<(int timing, bool isBar)>(TwoTempos().LinesBetween(0, 2000));
+            CollectionAssert.AreEqual(
+                new List<(int, bool)> { (0, true), (500, false), (1000, false), (1500, false), (2000, true) },
+                lines);
+        }
+
+        [Test]
+        public void LinesAcrossTempoChangeRestartTheBar()
+        {
+            var lines = new List<(int timing, bool isBar)>(TwoTempos().LinesBetween(7000, 8500));
+            CollectionAssert.AreEqual(
+                new List<(int, bool)> { (7000, false), (7500, false), (8000, true), (8250, false), (8500, false) },
+                lines);
+        }
+
+        [Test]
+        public void LinesStartMidWindowWithoutPrecedingLine()
+        {
+            var lines = new List<(int timing, bool isBar)>(TwoTempos().LinesBetween(1001, 1600));
+            CollectionAssert.AreEqual(new List<(int, bool)> { (1500, false) }, lines);
+        }
+
+        [Test]
+        public void NoLinesForUnusableTempoOrEmptyRange()
+        {
+            BeatGrid zeroBpm = new BeatGrid(new List<TimingEvent> { Ev(0, 0, 4) });
+            CollectionAssert.IsEmpty(new List<(int, bool)>(zeroBpm.LinesBetween(0, 5000)));
+            CollectionAssert.IsEmpty(new List<(int, bool)>(TwoTempos().LinesBetween(500, 100)));
+        }
     }
 }
