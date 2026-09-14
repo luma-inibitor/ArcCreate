@@ -80,6 +80,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
             OnRangeChange?.Invoke();
         }
 
+        /// <summary>
+        /// Move the start without ever crossing the end, for dragging a handle.
+        /// </summary>
+        public void MoveFrom(int timing)
+        {
+            int minLength = Math.Min(MinLengthMs, AudioLength);
+            SetRange(Clamp(timing, 0, To - minLength), To);
+        }
+
+        /// <summary>
+        /// Move the end without ever crossing the start, for dragging a handle.
+        /// </summary>
+        public void MoveTo(int timing)
+        {
+            int minLength = Math.Min(MinLengthMs, AudioLength);
+            SetRange(From, Clamp(timing, From + minLength, AudioLength));
+        }
+
         public bool Contains(int timing) => timing >= From && timing <= To;
 
         /// <summary>
