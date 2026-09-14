@@ -86,12 +86,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void IncrementSpeed()
         {
-            if (Value <= AbsoluteMin)
-            {
-                SetValue(Increment);
-            }
-
-            float newValue = Mathf.Round(Value / Increment + 1) * Increment;
+            float newValue = Value <= AbsoluteMin
+                ? Increment
+                : Mathf.Round(Value / Increment + 1) * Increment;
             SetValue(Mathf.Clamp(newValue, AbsoluteMin, MaxValue));
         }
 
