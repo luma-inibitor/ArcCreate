@@ -12,6 +12,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private Camera viewCamera;
         [SerializeField] private RawImage image;
         [SerializeField] private RectTransform rect;
+        [SerializeField] private RectTransform overviewRange;
         private readonly int timingShaderId = Shader.PropertyToID("_CurrentSample");
         private readonly int lengthShaderId = Shader.PropertyToID("_AudioLength");
         private readonly int repeatFromShaderId = Shader.PropertyToID("_RepeatSampleFrom");
@@ -22,6 +23,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
         /// Raised with the audio timing after a click or a completed drag.
         /// </summary>
         public event Action<int> OnSeek;
+
+        public Texture WaveformTexture => image.texture;
 
         public void OnPointerClick(PointerEventData eventData) => Seek(TimingAt(eventData));
 
@@ -65,6 +68,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         public void SetRepeatRange(bool repeatOn, int repeatFromTiming, int repeatToTiming)
         {
+            PlaceOverviewRange(repeatOn, repeatFromTiming, repeatToTiming);
             if (!repeatOn)
             {
                 repeatFromTiming = repeatToTiming = -1;
@@ -72,6 +76,28 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             image.material.SetFloat(repeatFromShaderId, WaveformGenerator.SecondToSample(repeatFromTiming / 1000f, gameplayData.AudioClip.Value));
             image.material.SetFloat(repeatToShaderId, WaveformGenerator.SecondToSample(repeatToTiming / 1000f, gameplayData.AudioClip.Value));
+        }
+
+        private void PlaceOverviewRange(bool repeatOn, int repeatFromTiming, int repeatToTiming)
+        {
+            if (overviewRange == null)
+            {
+                return;
+            }
+
+            AudioClip clip = gameplayData.AudioClip.Value;
+            float length = clip == null ? 0 : clip.length * 1000;
+            bool visible = repeatOn && length > 0;
+            overviewRange.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                return;
+            }
+
+            overviewRange.anchorMin = new Vector2(Mathf.Clamp01(repeatFromTiming / length), overviewRange.anchorMin.y);
+            overviewRange.anchorMax = new Vector2(Mathf.Clamp01(repeatToTiming / length), overviewRange.anchorMax.y);
+            overviewRange.offsetMin = new Vector2(0, overviewRange.offsetMin.y);
+            overviewRange.offsetMax = new Vector2(0, overviewRange.offsetMax.y);
         }
 
         private void Seek(int timing)
