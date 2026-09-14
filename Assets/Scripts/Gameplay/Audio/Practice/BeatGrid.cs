@@ -129,6 +129,50 @@ namespace ArcCreate.Gameplay.Audio.Practice
             return bars;
         }
 
+        /// <summary>
+        /// Beat lines in [from, to], in order, flagged when they start a bar.
+        /// Every timing event starts a new bar. Segments without a usable tempo produce no lines.
+        /// </summary>
+        public IEnumerable<(int timing, bool isBar)> LinesBetween(int from, int to)
+        {
+            if (IsEmpty || to < from)
+            {
+                yield break;
+            }
+
+            for (int index = SegmentIndexAt(from); index < timings.Count; index++)
+            {
+                TimingEvent ev = timings[index];
+                if (ev.Timing > to)
+                {
+                    yield break;
+                }
+
+                double beat = BeatLengthOf(ev);
+                if (beat <= 0)
+                {
+                    continue;
+                }
+
+                double segmentEnd = index + 1 < timings.Count ? timings[index + 1].Timing : double.PositiveInfinity;
+                int beatsPerBar = ev.Divisor >= 1 ? (int)Math.Round(ev.Divisor) : 0;
+                double startAt = Math.Max(from, ev.Timing);
+                long k = (long)Math.Ceiling(((startAt - ev.Timing) / beat) - 1e-9);
+
+                while (true)
+                {
+                    double t = ev.Timing + (k * beat);
+                    if (t > to || t >= segmentEnd)
+                    {
+                        break;
+                    }
+
+                    yield return ((int)Math.Round(t), beatsPerBar > 0 && k % beatsPerBar == 0);
+                    k++;
+                }
+            }
+        }
+
         private static double BeatLengthOf(TimingEvent ev)
         {
             return ev.Bpm == 0 ? 0 : 60000.0 / Math.Abs(ev.Bpm);
