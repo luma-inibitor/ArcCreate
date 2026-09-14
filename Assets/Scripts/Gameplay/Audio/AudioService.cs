@@ -191,8 +191,20 @@ namespace ArcCreate.Gameplay.Audio
                     audioTiming = newTiming;
                 }
             }
+            else if (dspTime < dspStartPlayingTime)
+            {
+                // Audio is scheduled but has not started. Either hold the timing (resume)
+                // or count it up towards the start so the chart scrolls in (play with delay).
+                isStationary = stationaryBeforeStart;
+                if (!stationaryBeforeStart)
+                {
+                    int remaining = Mathf.RoundToInt((float)((dspStartPlayingTime - dspTime) * 1000 * playbackSpeed));
+                    audioTiming = startTime - FullOffset - remaining;
+                }
+            }
             else
             {
+                isStationary = false;
                 audioTiming = Mathf.RoundToInt(AudioSource.time * 1000f);
             }
 
@@ -328,7 +340,8 @@ namespace ArcCreate.Gameplay.Audio
                 timing = 0;
             }
 
-            audioTiming = stationaryBeforeStart ? timing : timing - delay;
+            // A delay is real time; the chart advances at playback speed during it.
+            audioTiming = stationaryBeforeStart ? timing : timing - Mathf.RoundToInt(delay * playbackSpeed);
             updatePace = 1;
 
             if (resetJudge)
