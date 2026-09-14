@@ -20,9 +20,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private Button repeatOnButton;
         [SerializeField] private Button repeatFromButton;
         [SerializeField] private Button repeatToButton;
-        private int repeatToTiming;
-        private int repeatFromTiming;
-        private bool repeat;
+
+        private readonly PracticeLoop loop = new PracticeLoop();
+        private BeatGrid grid;
+
+        public PracticeLoop Loop => loop;
+
+        private BeatGrid Grid
+        {
+            get
+            {
+                if (grid == null)
+                {
+                    grid = new BeatGrid(Services.Chart.GetTimingGroup(0).Timings);
+                }
+
+                return grid;
+            }
+        }
 
         /// <summary>
         /// Build the waveform texture ahead of the first pause. Safe to call while inactive.
@@ -40,6 +55,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 OnClipChange(gameplayData.AudioClip.Value);
             }
 
+            gameplayData.OnChartTimingEdit += InvalidateGrid;
+            gameplayData.OnChartEdit += InvalidateGrid;
+            timeline.OnSeek += OnSeek;
             speedSlider.OnValueChanged += OnSpeedChange;
             repeatOffButton.onClick.AddListener(TurnRepeatOff);
             repeatOnButton.onClick.AddListener(TurnRepeatOn);
@@ -51,6 +69,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             gameplayData.AudioClip.OnValueChange -= OnClipChange;
             gameplayData.OnGameplayUpdate -= CheckRepeat;
+            gameplayData.OnChartTimingEdit -= InvalidateGrid;
+            gameplayData.OnChartEdit -= InvalidateGrid;
+            timeline.OnSeek -= OnSeek;
             speedSlider.OnValueChanged -= OnSpeedChange;
             repeatOffButton.onClick.RemoveListener(TurnRepeatOff);
             repeatOnButton.onClick.RemoveListener(TurnRepeatOn);
@@ -58,11 +79,16 @@ namespace ArcCreate.Gameplay.Audio.Practice
             repeatToButton.onClick.RemoveListener(SetRepeatTo);
         }
 
+        private void InvalidateGrid()
+        {
+            grid = null;
+        }
+
         private void OnClipChange(AudioClip clip)
         {
             timeline.LoadWaveformFor(clip);
-            repeatFromTiming = 0;
-            repeatToTiming = Mathf.RoundToInt(clip.length * 1000);
+            loop.SetAudioLength(Mathf.RoundToInt(clip.length * 1000));
+            InvalidateGrid();
             UpdateRepeatRange();
         }
 
@@ -74,7 +100,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void TurnRepeatOff()
         {
-            repeat = false;
+            loop.Enabled = false;
             repeatOff.SetActive(true);
             repeatOn.SetActive(false);
             UpdateRepeatRange();
@@ -83,48 +109,68 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void TurnRepeatOn()
         {
-            repeat = true;
+            loop.Enabled = true;
             repeatOff.SetActive(false);
             repeatOn.SetActive(true);
             UpdateRepeatRange();
+            gameplayData.OnGameplayUpdate -= CheckRepeat;
             gameplayData.OnGameplayUpdate += CheckRepeat;
         }
 
         private void SetRepeatFrom()
         {
-            repeatFromTiming = Services.Audio.AudioTiming;
+            loop.SetFrom(SnapToBar(Services.Audio.AudioTiming));
             UpdateRepeatRange();
         }
 
         private void SetRepeatTo()
         {
-            repeatToTiming = Services.Audio.AudioTiming;
+            loop.SetTo(SnapToBar(Services.Audio.AudioTiming));
             UpdateRepeatRange();
+        }
+
+        private int SnapToBar(int audioTiming)
+        {
+            int offset = Services.Audio.FullOffset;
+            return Grid.SnapToBar(audioTiming - offset) + offset;
         }
 
         private void UpdateRepeatRange()
         {
-            if (repeatFromTiming > repeatToTiming)
-            {
-                (repeatFromTiming, repeatToTiming) = (repeatToTiming, repeatFromTiming);
-            }
+            timeline.SetRepeatRange(loop.Enabled, loop.From, loop.To);
+        }
 
-            repeatToTiming = Mathf.Clamp(repeatToTiming, repeatFromTiming + 1000, Services.Audio.AudioLength);
-            repeatFromTiming = Mathf.Clamp(repeatFromTiming, 0, repeatToTiming - 1000);
-            timeline.SetRepeatRange(repeat, repeatFromTiming, repeatToTiming);
+        /// <summary>
+        /// A seek that lands outside the loop range turns the loop off, so resuming plays from
+        /// where the user went instead of snapping back to the loop start.
+        /// </summary>
+        private void OnSeek(int audioTiming)
+        {
+            if (loop.Enabled && !loop.Contains(audioTiming))
+            {
+                TurnRepeatOff();
+            }
         }
 
         private void CheckRepeat(int chartTiming)
         {
             int timing = Services.Audio.AudioTiming;
             int length = Services.Audio.AudioLength;
-            bool outsideRange = timing < repeatFromTiming - 200 * gameplayData.PlaybackSpeed.Value || timing > repeatToTiming;
-            bool audioEnd = timing >= length - 100 && repeatToTiming >= length - 100;
-            if ((Services.Audio.IsPlaying && outsideRange) || (audioEnd && !gameObject.activeInHierarchy))
+            bool audioEnd = timing >= length - 100 && loop.To >= length - 100;
+            if (loop.ShouldRestart(timing, Services.Audio.IsPlaying) || (audioEnd && !gameObject.activeInHierarchy))
             {
-                Services.Audio.Pause();
-                Services.Audio.PlayWithDelay(repeatFromTiming, 200);
+                Restart();
             }
+        }
+
+        private void Restart()
+        {
+            float speed = gameplayData.PlaybackSpeed.Value;
+            double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
+            int delay = loop.RestartDelayMs(barLength, speed);
+            loop.MarkRestarted(delay, speed);
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(loop.From, delay);
         }
     }
 }
