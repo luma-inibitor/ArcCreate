@@ -147,5 +147,29 @@ namespace Tests.Unit
             Assert.IsFalse(loop.Contains(1999));
             Assert.IsFalse(loop.Contains(5001));
         }
+
+        [Test]
+        public void MoveFromNeverCrossesTo()
+        {
+            loop.SetRange(2000, 5000);
+            loop.MoveFrom(3000);
+            Assert.AreEqual(3000, loop.From);
+            loop.MoveFrom(7000);
+            Assert.AreEqual(5000 - PracticeLoop.MinLengthMs, loop.From);
+            Assert.AreEqual(5000, loop.To);
+            loop.MoveFrom(-100);
+            Assert.AreEqual(0, loop.From);
+        }
+
+        [Test]
+        public void MoveToNeverCrossesFrom()
+        {
+            loop.SetRange(2000, 5000);
+            loop.MoveTo(1000);
+            Assert.AreEqual(2000, loop.From);
+            Assert.AreEqual(2000 + PracticeLoop.MinLengthMs, loop.To);
+            loop.MoveTo(20000);
+            Assert.AreEqual(10000, loop.To);
+        }
     }
 }
