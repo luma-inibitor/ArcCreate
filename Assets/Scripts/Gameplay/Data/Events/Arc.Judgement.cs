@@ -18,7 +18,7 @@ namespace ArcCreate.Gameplay.Data
             RecalculateJudgeTimings();
             highlight = highlight && timing >= Timing && timing <= EndTiming;
             longParticleUntil = int.MinValue;
-            numJudgementRequestsSent = ComboAt(timing);
+            numJudgementRequestsSent = JudgePointCountAt(timing);
             highlightRequestSent = false;
             arcGroupAlpha = 1;
             hasBeenHitOnce = hasBeenHitOnce && timing >= Timing && timing <= EndTiming;
@@ -35,35 +35,27 @@ namespace ArcCreate.Gameplay.Data
             TotalCombo = 0;
             FirstJudgeTime = double.MaxValue;
             TimeIncrement = double.MaxValue;
+            JudgePoints.Clear();
 
             if (IsTrace || EndTiming == Timing)
             {
                 return;
             }
 
-            double bpm = TimingGroupInstance.GetBpm(Timing);
+            // A BPM of 0 gives an infinite interval, and the note has a single point in the middle, like the official client.
+            float interval = JudgePointCalculator.CalculateInterval(TimingGroupInstance.GetBpm(Timing), Values.TimingPointDensity);
+            TimeIncrement = interval;
 
-            if (bpm == 0)
-            {
-                return;
-            }
-
-            int duration = EndTiming - Timing;
-            bpm = System.Math.Abs(bpm);
-            TimeIncrement = (bpm >= 255 ? 60_000 : 30_000) / bpm / Values.TimingPointDensity;
-
-            int totalCombo = (int)(duration / TimeIncrement);
-            int comboModifier = (IsFirstArcOfGroup ? 0 : 1) ^ 1;
-            if (totalCombo <= comboModifier)
-            {
-                TotalCombo = 1;
-                FirstJudgeTime = Timing + (duration / 2);
-            }
-            else
-            {
-                TotalCombo = totalCombo - comboModifier;
-                FirstJudgeTime = Timing + (comboModifier * TimeIncrement);
-            }
+            // The first arc of a chain has no point at its start, the arcs connected after it do.
+            // The last two points of an arc that has an arc connected after it are merged when its end is on the interval grid.
+            JudgePoints.AddRange(JudgePointCalculator.Calculate(
+                Timing,
+                EndTiming,
+                interval,
+                includeStart: !IsFirstArcOfGroup,
+                hasNextArc: NextArc != null && !NextArc.IsTrace));
+            TotalCombo = JudgePointCalculator.TotalCombo(JudgePoints);
+            FirstJudgeTime = JudgePoints[0].Timing;
         }
 
         public void UpdateJudgement(int currentTiming, GroupProperties groupProperties)
@@ -132,27 +124,33 @@ namespace ArcCreate.Gameplay.Data
 
         private void RequestJudgement(GroupProperties props)
         {
-            for (int t = numJudgementRequestsSent; t < TotalCombo; t++)
+            // A point that absorbed the last point of the arc counts twice, so it sends two requests at the same timing.
+            int halfInterval = (int)System.Math.Min(TimeIncrement / 2, 1_000_000_000);
+            for (int p = numJudgementRequestsSent; p < JudgePoints.Count; p++)
             {
-                int timing = (int)(Timing + (t * TimeIncrement));
-                int startTiming = timing - (int)(TimeIncrement / 2);
-                bool shortened = t == 0
+                JudgePoint point = JudgePoints[p];
+                int timing = point.Timing;
+                int startTiming = timing - halfInterval;
+                bool shortened = p == 0
                     && PreviousArc != null
                     && ArcConnection.HasDirectionChange(PreviousArc, this);
                 int lateTiming = timing + ArcFormula.CalculateArcMissDuration((float)TimeIncrement, shortened);
-                Services.Judgement.Request(new ArcJudgementRequest()
+                for (int w = 0; w < point.Weight; w++)
                 {
-                    StartAtTiming = startTiming,
-                    ExpireAtTiming = lateTiming,
-                    AutoAtTiming = timing,
-                    Arc = this,
-                    IsJudgement = true,
-                    Receiver = this,
-                    Properties = props,
-                });
+                    Services.Judgement.Request(new ArcJudgementRequest()
+                    {
+                        StartAtTiming = startTiming,
+                        ExpireAtTiming = lateTiming,
+                        AutoAtTiming = timing,
+                        Arc = this,
+                        IsJudgement = true,
+                        Receiver = this,
+                        Properties = props,
+                    });
+                }
             }
 
-            numJudgementRequestsSent = TotalCombo;
+            numJudgementRequestsSent = JudgePoints.Count;
         }
 
         private void RequestHighlight(int timing, GroupProperties props)

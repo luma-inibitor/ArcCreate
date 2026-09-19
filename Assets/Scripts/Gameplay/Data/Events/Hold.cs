@@ -49,7 +49,7 @@ namespace ArcCreate.Gameplay.Data
             longParticleUntil = int.MinValue;
             lastHitTime = int.MinValue;
             tapJudgementRequestSent = false;
-            numHoldJudgementRequestsSent = ComboAt(timing);
+            numHoldJudgementRequestsSent = JudgePointCountAt(timing);
             holdHighlightRequestSent = false;
             FloorPosition = TimingGroupInstance.GetFloorPosition(Timing);
         }
@@ -57,30 +57,28 @@ namespace ArcCreate.Gameplay.Data
         public override void RecalculateJudgeTimings()
         {
             TotalCombo = 0;
-            double bpm = TimingGroupInstance.GetBpm(Timing);
+            FirstJudgeTime = double.MaxValue;
+            TimeIncrement = double.MaxValue;
+            JudgePoints.Clear();
 
-            if (bpm == 0 || EndTiming == Timing)
+            if (EndTiming == Timing)
             {
-                FirstJudgeTime = double.MaxValue;
-                TimeIncrement = double.MaxValue;
                 return;
             }
 
-            int duration = EndTiming - Timing;
-            bpm = System.Math.Abs(bpm);
-            TimeIncrement = (bpm >= 255 ? 60_000 : 30_000) / bpm / Values.TimingPointDensity;
+            // A BPM of 0 gives an infinite interval, and the hold has a single point in the middle, like the official client.
+            float interval = JudgePointCalculator.CalculateInterval(TimingGroupInstance.GetBpm(Timing), Values.TimingPointDensity);
+            TimeIncrement = interval;
 
-            int count = (int)(duration / TimeIncrement);
-            if (count <= 1)
-            {
-                TotalCombo = 1;
-                FirstJudgeTime = Timing;
-            }
-            else
-            {
-                TotalCombo = count - 1;
-                FirstJudgeTime = Timing + TimeIncrement;
-            }
+            // A hold has no point at its start. A hold too short for a regular point has a single point in the middle.
+            JudgePoints.AddRange(JudgePointCalculator.Calculate(
+                Timing,
+                EndTiming,
+                interval,
+                includeStart: false,
+                hasNextArc: false));
+            TotalCombo = JudgePointCalculator.TotalCombo(JudgePoints);
+            FirstJudgeTime = JudgePoints[0].Timing;
         }
 
         public void Rebuild()
@@ -294,42 +292,25 @@ namespace ArcCreate.Gameplay.Data
 
         private void RequestHoldJudgement(GroupProperties props)
         {
-            if (TotalCombo == 1 && numHoldJudgementRequestsSent == 0)
+            int halfInterval = (int)System.Math.Min(TimeIncrement / 2, 1_000_000_000);
+            float timeIncrement = Mathf.Min((float)TimeIncrement, (float)Values.LongNoteMaxJudgeWindow);
+            for (int p = numHoldJudgementRequestsSent; p < JudgePoints.Count; p++)
             {
-                // special handling for hold with just 1 combo
-                int timing = Timing + (Timing - EndTiming) / 2;
+                int timing = JudgePoints[p].Timing;
+
                 Services.Judgement.Request(new LaneHoldJudgementRequest()
                 {
-                    StartAtTiming = (int)(Timing - TimeIncrement),
-                    ExpireAtTiming = timing,
-                    AutoAtTiming = Timing,
+                    StartAtTiming = timing - halfInterval,
+                    ExpireAtTiming = timing + (int)(2 * timeIncrement),
+                    AutoAtTiming = timing,
                     Lane = Lane,
                     IsJudgement = true,
                     Receiver = this,
                     Properties = props,
                 });
             }
-            else
-            {
-                for (int t = numHoldJudgementRequestsSent; t < TotalCombo; t++)
-                {
-                    int timing = (int)System.Math.Round(FirstJudgeTime + (t * TimeIncrement));
-                    float timeIncrement = Mathf.Min((float)TimeIncrement, (float)Values.LongNoteMaxJudgeWindow);
 
-                    Services.Judgement.Request(new LaneHoldJudgementRequest()
-                    {
-                        StartAtTiming = timing,
-                        ExpireAtTiming = timing + (int)(2 * timeIncrement),
-                        AutoAtTiming = timing,
-                        Lane = Lane,
-                        IsJudgement = true,
-                        Receiver = this,
-                        Properties = props,
-                    });
-                }
-            }
-
-            numHoldJudgementRequestsSent = TotalCombo;
+            numHoldJudgementRequestsSent = JudgePoints.Count;
         }
 
         protected void RequestHoldHighlight(int timing, GroupProperties props)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ArcCreate.Gameplay.Data
@@ -13,19 +14,50 @@ namespace ArcCreate.Gameplay.Data
         public double FirstJudgeTime { get; protected set; }
 
         /// <summary>
+        /// The judgement points of this note, ordered by timing.
+        /// </summary>
+        protected List<JudgePoint> JudgePoints { get; } = new List<JudgePoint>();
+
+        /// <summary>
         /// Recalculate the judge timings value of this note.
         /// </summary>
         public abstract void RecalculateJudgeTimings();
 
         public override int ComboAt(int timing)
         {
-            if (timing < FirstJudgeTime)
+            int combo = 0;
+            for (int i = 0; i < JudgePoints.Count; i++)
             {
-                return 0;
+                if (JudgePoints[i].Timing > timing)
+                {
+                    break;
+                }
+
+                combo += JudgePoints[i].Weight;
             }
 
-            int combo = (int)((timing - FirstJudgeTime) / TimeIncrement) + 1;
             return Mathf.Clamp(combo, 0, TotalCombo);
+        }
+
+        /// <summary>
+        /// Gets the number of judgement points that are not later than the timing.
+        /// </summary>
+        /// <param name="timing">The chart timing.</param>
+        /// <returns>The number of points.</returns>
+        public int JudgePointCountAt(int timing)
+        {
+            int count = 0;
+            for (int i = 0; i < JudgePoints.Count; i++)
+            {
+                if (JudgePoints[i].Timing > timing)
+                {
+                    break;
+                }
+
+                count++;
+            }
+
+            return count;
         }
 
         public override void Assign(ArcEvent newValues)
