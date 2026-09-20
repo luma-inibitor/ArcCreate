@@ -36,6 +36,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private readonly PracticeLoop loop = new PracticeLoop();
         private readonly PracticeStats stats = new PracticeStats();
         private BeatGrid grid;
+        private bool collecting;
 
         public PracticeLoop Loop => loop;
 
@@ -96,13 +97,27 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void Start()
         {
-            // Services are set up in Services.Awake; this object is enabled afterwards, but Start is the safer order.
+            StartCollecting();
+        }
+
+        /// <summary>
+        /// Subscribe to judgements. This object sits under the pause screen, so its own Start only runs at the
+        /// first pause; the practice HUD calls this as soon as gameplay runs, so no judgement is missed.
+        /// </summary>
+        public void StartCollecting()
+        {
+            if (collecting || Services.Score == null)
+            {
+                return;
+            }
+
+            collecting = true;
             Services.Score.OnJudgement += OnJudgement;
         }
 
         private void OnDestroy()
         {
-            if (Services.Score != null)
+            if (collecting && Services.Score != null)
             {
                 Services.Score.OnJudgement -= OnJudgement;
             }

@@ -92,6 +92,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 shownJudged = -1;
             }
 
+            practiceMenu.StartCollecting();
+
             PracticeLoop loop = practiceMenu.Loop;
             PracticeStats stats = practiceMenu.Stats;
             BeatGrid grid = practiceMenu.Grid;
