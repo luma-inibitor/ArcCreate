@@ -121,13 +121,13 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void SetRepeatFrom()
         {
-            loop.SetFrom(SnapToBar(Services.Audio.AudioTiming));
+            loop.SetFrom(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Down));
             UpdateRepeatRange();
         }
 
         private void SetRepeatTo()
         {
-            loop.SetTo(SnapToBar(Services.Audio.AudioTiming));
+            loop.SetTo(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Up));
             UpdateRepeatRange();
         }
 
@@ -149,10 +149,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
             UpdateRepeatRange();
         }
 
-        private int SnapToBar(int audioTiming)
+        private int SnapToBar(int audioTiming, BeatGrid.Rounding rounding = BeatGrid.Rounding.Nearest)
         {
             int offset = Services.Audio.FullOffset;
-            return Grid.SnapToBar(audioTiming - offset) + offset;
+            return Grid.SnapToBar(audioTiming - offset, rounding) + offset;
         }
 
         private void UpdateRepeatRange()
