@@ -192,6 +192,20 @@ namespace Tests.Unit
         }
 
         [Test]
+        public void LoopCountCountsRestartsUntilTheRangeChanges()
+        {
+            Assert.AreEqual(0, loop.LoopCount);
+            loop.CountRestart();
+            loop.CountRestart();
+            Assert.AreEqual(2, loop.LoopCount);
+            loop.SetRange(1000, 5000);
+            Assert.AreEqual(0, loop.LoopCount);
+            loop.CountRestart();
+            loop.ResetLoopCount();
+            Assert.AreEqual(0, loop.LoopCount);
+        }
+
+        [Test]
         public void LeadInDefaultsToOneBar()
         {
             Assert.AreEqual(PracticeLoop.LeadInMode.OneBar, loop.LeadIn);

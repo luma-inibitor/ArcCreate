@@ -40,24 +40,6 @@ namespace ArcCreate.Gameplay.Score
         private readonly List<(int timingGroup, JudgementResult result)> resultReceivedThisFrame = new List<(int, JudgementResult)>(20);
         private Grade[] cachedGradeOptions;
 
-        public event Action<JudgementResult, Option<int>> OnJudgement;
-
-        private bool practiceDisplay;
-
-        public bool PracticeDisplay
-        {
-            get => practiceDisplay;
-            set
-            {
-                practiceDisplay = value;
-                OnFrPmPositionSettings(Settings.FrPmIndicatorPosition.Value);
-                if (!value)
-                {
-                    UpdateDisplay();
-                }
-            }
-        }
-
         public int CurrentScore => (int)Math.Round(CurrentScoreTotal);
 
         public int CurrentCombo => currentCombo;
@@ -82,7 +64,6 @@ namespace ArcCreate.Gameplay.Score
         {
             resultReceivedThisFrame.Add((timingGroup, result));
             SetJudgementCount(result, GetJudgementCount(result) + 1);
-            OnJudgement?.Invoke(result, offset);
 
             if (result.IsMiss())
             {
@@ -246,12 +227,6 @@ namespace ArcCreate.Gameplay.Score
 
         private void SetScore(double score, double count)
         {
-            // The practice HUD writes section accuracy into the score text instead.
-            if (practiceDisplay)
-            {
-                return;
-            }
-
             int length = 0;
             double scorePerNote = noteCount != 0 ? (double)Constants.MaxScore / noteCount : 0;
             double theoreticalScore = count * (scorePerNote + 1);
@@ -408,7 +383,7 @@ namespace ArcCreate.Gameplay.Score
         private void OnFrPmPositionSettings(int pos)
         {
             var position = (FrPmPosition)pos;
-            if (position == FrPmPosition.Off || practiceDisplay)
+            if (position == FrPmPosition.Off)
             {
                 indicatorsContainer.gameObject.SetActive(false);
             }

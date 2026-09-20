@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using ArcCreate.Data;
 using ArcCreate.Gameplay.Judgement;
@@ -10,17 +9,6 @@ namespace ArcCreate.Gameplay.Score
     /// </summary>
     public interface IScoreService
     {
-        /// <summary>
-        /// Raised for every judgement passed to <see cref="ProcessJudgement"/>, with its offset when it has one.
-        /// </summary>
-        event Action<JudgementResult, Option<int>> OnJudgement;
-
-        /// <summary>
-        /// Gets or sets whether the practice HUD owns the score text and indicators: while set, the score
-        /// display is not written and the FR/PM indicators are hidden.
-        /// </summary>
-        bool PracticeDisplay { get; set; }
-
         int CurrentScore { get; }
 
         int CurrentCombo { get; }

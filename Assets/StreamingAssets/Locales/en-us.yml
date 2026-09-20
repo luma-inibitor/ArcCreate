@@ -1017,22 +1017,11 @@ Gameplay:
       OneBar: 1 bar
       TwoBars: 2 bars
       TwoSeconds: 2 s
-    Stats:
-      Title: This section
-      Loops: "{count} loops"
-      Accuracy: "{percent}% acc"
-      NoNotes: no notes yet
-      Counts: "{max} max · {pure} pure · {far} far · {lost} lost"
-      Offset: "avg {offset} ms · {early} early · {late} late"
-      Early: early
-      Late: late
     Hud:
       Speed: "{speed}x"
       Loop: "loop {count}"
       Range: "A {from} – B {to}"
       CountIn: "bar {bar} in {beats}"
-      Accuracy: "{percent}%"
-      NoAccuracy: "–"
   Selection:
     SelectStatus:
       Singular: |-

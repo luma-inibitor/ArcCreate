@@ -8,8 +8,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
 {
     /// <summary>
     /// The practice strip on the unpaused HUD: playback speed, loop count and A-B bars next to the pause
-    /// button, a count-in during the lead-in, the loop range on the progress bar, and section accuracy in
-    /// place of the score. Active only in practice mode.
+    /// button, a count-in during the lead-in, and the loop range on the progress bar.
+    /// Active only in practice mode.
     /// </summary>
     public class PracticeHud : MonoBehaviour
     {
@@ -26,7 +26,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         [Header("Elsewhere on the HUD")]
         [SerializeField] private RectTransform progressMarker;
-        [SerializeField] private TMP_Text scoreText;
 
         private float shownSpeed = -1;
         private int shownLoops = -1;
@@ -34,8 +33,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private int shownTo = -1;
         private bool shownEnabled;
         private int shownCountIn = -1;
-        private int shownJudged = -1;
-        private double shownAccuracy = -1;
 
         private void Awake()
         {
@@ -50,21 +47,12 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void OnEnable()
         {
             gameplayData.OnGameplayUpdate += OnGameplayUpdate;
-            if (Services.Score != null)
-            {
-                Services.Score.PracticeDisplay = true;
-            }
-
             Invalidate();
         }
 
         private void OnDisable()
         {
             gameplayData.OnGameplayUpdate -= OnGameplayUpdate;
-            if (Services.Score != null)
-            {
-                Services.Score.PracticeDisplay = false;
-            }
         }
 
         private void OpenPause()
@@ -79,23 +67,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
             shownFrom = -1;
             shownTo = -1;
             shownCountIn = -1;
-            shownJudged = -1;
-            shownAccuracy = -1;
         }
 
         private void OnGameplayUpdate(int chartTiming)
         {
-            // Services may not exist yet when this object is first enabled, so claim the score text here too.
-            if (!Services.Score.PracticeDisplay)
-            {
-                Services.Score.PracticeDisplay = true;
-                shownJudged = -1;
-            }
-
-            practiceMenu.StartCollecting();
-
             PracticeLoop loop = practiceMenu.Loop;
-            PracticeStats stats = practiceMenu.Stats;
             BeatGrid grid = practiceMenu.Grid;
             int offset = Services.Audio.FullOffset;
             float speed = gameplayData.PlaybackSpeed.Value;
@@ -109,11 +85,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 });
             }
 
-            if (loop.Enabled != shownEnabled || stats.LoopCount != shownLoops)
+            if (loop.Enabled != shownEnabled || loop.LoopCount != shownLoops)
             {
-                shownLoops = stats.LoopCount;
+                shownLoops = loop.LoopCount;
                 SetChip(loopText, loop.Enabled
-                    ? I18n.S("Gameplay.Practice.Hud.Loop", new Dictionary<string, object>() { { "count", stats.LoopCount } })
+                    ? I18n.S("Gameplay.Practice.Hud.Loop", new Dictionary<string, object>() { { "count", loop.LoopCount } })
                     : string.Empty);
             }
 
@@ -142,7 +118,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             shownEnabled = loop.Enabled;
             UpdateCountIn(loop, grid, offset, speed);
-            UpdateAccuracy(stats);
         }
 
         /// <summary>
@@ -184,27 +159,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 {
                     { "bar", grid.BarIndexAt(loop.From - offset) + 1 },
                     { "beats", beats },
-                });
-        }
-
-        /// <summary>
-        /// Section accuracy where the score normally is. The score resets on every loop restart, so it
-        /// says nothing useful while drilling.
-        /// </summary>
-        private void UpdateAccuracy(PracticeStats stats)
-        {
-            if (scoreText == null || (stats.JudgedCount == shownJudged && stats.Accuracy == shownAccuracy))
-            {
-                return;
-            }
-
-            shownJudged = stats.JudgedCount;
-            shownAccuracy = stats.Accuracy;
-            scoreText.text = stats.JudgedCount == 0
-                ? I18n.S("Gameplay.Practice.Hud.NoAccuracy")
-                : I18n.S("Gameplay.Practice.Hud.Accuracy", new Dictionary<string, object>()
-                {
-                    { "percent", (stats.Accuracy * 100).ToString("f1") },
                 });
         }
     }
