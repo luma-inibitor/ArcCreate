@@ -176,7 +176,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             float speed = gameplayData.PlaybackSpeed.Value;
             double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
             int delay = loop.RestartDelayMs(barLength, speed);
-            loop.MarkRestarted();
             Services.Audio.Pause();
             Services.Audio.PlayWithDelay(loop.From, delay);
         }

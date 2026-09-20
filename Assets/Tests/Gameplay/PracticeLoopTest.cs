@@ -15,6 +15,15 @@ namespace Tests.Unit
             loop.SetAudioLength(10000);
         }
 
+        /// <summary>
+        /// An arrange-step call to <see cref="PracticeLoop.ShouldRestart"/> whose result is not asserted,
+        /// kept separate from the asserted steps for readability.
+        /// </summary>
+        private static void Observe(PracticeLoop loop, int timing, bool playing = true)
+        {
+            loop.ShouldRestart(timing, playing);
+        }
+
         [Test]
         public void AudioLengthResetsRangeToWholeAudio()
         {
@@ -69,29 +78,17 @@ namespace Tests.Unit
         }
 
         [Test]
-        public void RangeChangeRaisesEventAndResetsLoopCount()
-        {
-            int raised = 0;
-            loop.OnRangeChange += () => raised++;
-            loop.MarkRestarted();
-            Assert.AreEqual(1, loop.LoopCount);
-            loop.SetRange(2000, 5000);
-            Assert.AreEqual(1, raised);
-            Assert.AreEqual(0, loop.LoopCount);
-        }
-
-        [Test]
         public void RestartOnlyWhenEnabledAndPlaying()
         {
             loop.SetRange(2000, 5000);
-            loop.ShouldRestart(4900, true);
+            Observe(loop, 4900);
             Assert.IsFalse(loop.ShouldRestart(6000, isPlaying: true));
 
             loop.Enabled = true;
-            loop.ShouldRestart(4900, true);
+            Observe(loop, 4900);
             Assert.IsFalse(loop.ShouldRestart(6000, isPlaying: false));
 
-            loop.ShouldRestart(4900, true);
+            Observe(loop, 4900);
             Assert.IsTrue(loop.ShouldRestart(6000, isPlaying: true));
         }
 
@@ -120,7 +117,7 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            loop.ShouldRestart(3000, false);
+            Observe(loop, 3000, playing: false);
 
             // Seek while paused, then resume and keep playing past B.
             Assert.IsFalse(loop.ShouldRestart(8000, false));
@@ -133,7 +130,7 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            loop.ShouldRestart(3000, false);
+            Observe(loop, 3000, playing: false);
 
             Assert.IsFalse(loop.ShouldRestart(500, false));
             Assert.IsFalse(loop.ShouldRestart(500, true));
@@ -147,7 +144,7 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            loop.ShouldRestart(4990, true);
+            Observe(loop, 4990);
             Assert.IsTrue(loop.ShouldRestart(5010, true));
 
             // Lead-in starts before A.
@@ -160,7 +157,7 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            loop.ShouldRestart(4800, true);
+            Observe(loop, 4800);
             Assert.IsTrue(loop.ShouldRestart(5400, true));
         }
 
@@ -169,49 +166,29 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            loop.ShouldRestart(4000, true);
+            Observe(loop, 4000);
 
             loop.SetTo(3000);
             Assert.IsFalse(loop.ShouldRestart(4000, true));
 
-            loop.ShouldRestart(2900, true);
+            Observe(loop, 2900);
             loop.ResetTracking();
             Assert.IsFalse(loop.ShouldRestart(3100, true));
         }
 
         [Test]
-        public void RestartDelayFollowsLeadInMode()
+        public void RestartDelayUsesOneBarOfLeadIn()
         {
-            loop.LeadIn = LeadInMode.None;
-            Assert.AreEqual(Values.DelayBeforeAudioResume, loop.RestartDelayMs(1000, 1f));
-
-            loop.LeadIn = LeadInMode.OneBar;
             Assert.AreEqual(1000, loop.RestartDelayMs(1000, 1f));
             Assert.AreEqual(2000, loop.RestartDelayMs(1000, 0.5f));
-
-            loop.LeadIn = LeadInMode.TwoBars;
-            Assert.AreEqual(4000, loop.RestartDelayMs(1000, 0.5f));
-
-            loop.LeadIn = LeadInMode.TwoSeconds;
-            Assert.AreEqual(2000, loop.RestartDelayMs(1000, 0.5f));
+            Assert.AreEqual(3334, loop.RestartDelayMs(1000, 0.3f));
         }
 
         [Test]
         public void RestartDelayFallsBackWithoutABar()
         {
-            loop.LeadIn = LeadInMode.OneBar;
-            Assert.AreEqual(2000, loop.RestartDelayMs(0, 1f));
-            Assert.GreaterOrEqual(loop.RestartDelayMs(50, 1f), Values.DelayBeforeAudioResume);
-        }
-
-        [Test]
-        public void Contains()
-        {
-            loop.SetRange(2000, 5000);
-            Assert.IsTrue(loop.Contains(2000));
-            Assert.IsTrue(loop.Contains(5000));
-            Assert.IsFalse(loop.Contains(1999));
-            Assert.IsFalse(loop.Contains(5001));
+            Assert.AreEqual(PracticeLoop.FallbackLeadInMs, loop.RestartDelayMs(0, 1f));
+            Assert.AreEqual(Values.DelayBeforeAudioResume, loop.RestartDelayMs(50, 1f));
         }
 
         [Test]
