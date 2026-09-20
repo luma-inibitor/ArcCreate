@@ -60,7 +60,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             gameplayData.OnChartTimingEdit += InvalidateGrid;
             gameplayData.OnChartEdit += InvalidateGrid;
-            timeline.OnSeek += OnSeek;
             speedSlider.OnValueChanged += OnSpeedChange;
             repeatOffButton.onClick.AddListener(TurnRepeatOff);
             repeatOnButton.onClick.AddListener(TurnRepeatOn);
@@ -74,7 +73,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             gameplayData.OnGameplayUpdate -= CheckRepeat;
             gameplayData.OnChartTimingEdit -= InvalidateGrid;
             gameplayData.OnChartEdit -= InvalidateGrid;
-            timeline.OnSeek -= OnSeek;
             speedSlider.OnValueChanged -= OnSpeedChange;
             repeatOffButton.onClick.RemoveListener(TurnRepeatOff);
             repeatOnButton.onClick.RemoveListener(TurnRepeatOn);
@@ -113,6 +111,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void TurnRepeatOn()
         {
             loop.Enabled = true;
+            loop.ResetTracking();
             repeatOff.SetActive(false);
             repeatOn.SetActive(true);
             UpdateRepeatRange();
@@ -161,18 +160,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             timeline.SetRepeatRange(loop.Enabled, loop.From, loop.To);
         }
 
-        /// <summary>
-        /// A seek that lands outside the loop range turns the loop off, so resuming plays from
-        /// where the user went instead of snapping back to the loop start.
-        /// </summary>
-        private void OnSeek(int audioTiming)
-        {
-            if (loop.Enabled && !loop.Contains(audioTiming))
-            {
-                TurnRepeatOff();
-            }
-        }
-
         private void CheckRepeat(int chartTiming)
         {
             int timing = Services.Audio.AudioTiming;
@@ -189,7 +176,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             float speed = gameplayData.PlaybackSpeed.Value;
             double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
             int delay = loop.RestartDelayMs(barLength, speed);
-            loop.MarkRestarted(delay, speed);
+            loop.MarkRestarted();
             Services.Audio.Pause();
             Services.Audio.PlayWithDelay(loop.From, delay);
         }

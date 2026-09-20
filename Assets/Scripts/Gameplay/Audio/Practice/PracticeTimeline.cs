@@ -1,4 +1,3 @@
-using System;
 using ArcCreate.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,11 +17,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private readonly int repeatFromShaderId = Shader.PropertyToID("_RepeatSampleFrom");
         private readonly int repeatToShaderId = Shader.PropertyToID("_RepeatSampleTo");
         private AudioClip loadedClip;
-
-        /// <summary>
-        /// Raised with the audio timing after a click or a completed drag.
-        /// </summary>
-        public event Action<int> OnSeek;
 
         public Texture WaveformTexture => image.texture;
 
@@ -104,7 +98,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             Services.Audio.AudioTiming = timing;
             Services.Audio.SetResumeAt(timing);
-            OnSeek?.Invoke(timing);
         }
 
         private int TimingAt(PointerEventData eventData)

@@ -18,13 +18,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
     {
         public const int MinLengthMs = 1000;
 
-        /// <summary>
-        /// Slack applied below the lead-in start before a restart is triggered,
-        /// so rounding in the audio timing never causes a restart storm.
-        /// </summary>
-        public const int RestartToleranceMs = 10;
-
-        private int prerollChartMs = 0;
+        private int? lastTiming;
 
         public event Action OnRangeChange;
 
@@ -76,7 +70,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             From = from;
             To = to;
             LoopCount = 0;
-            prerollChartMs = 0;
+            ResetTracking();
             OnRangeChange?.Invoke();
         }
 
@@ -134,27 +128,33 @@ namespace ArcCreate.Gameplay.Audio.Practice
         }
 
         /// <summary>
-        /// Record that a restart was issued with the given real-time delay and speed.
+        /// Record that a restart was issued.
         /// </summary>
-        public void MarkRestarted(int delayMs, float playbackSpeed)
+        public void MarkRestarted()
         {
-            prerollChartMs = (int)Math.Round(delayMs * playbackSpeed);
             LoopCount++;
         }
 
         /// <summary>
-        /// Whether playback should jump back to <see cref="From"/>.
-        /// True when the loop is on, audio is playing, and the timing has left the range
-        /// (allowing for the lead-in of the most recent restart).
+        /// Forget the last observed timing, so the next <see cref="ShouldRestart"/> call only observes.
+        /// </summary>
+        public void ResetTracking()
+        {
+            lastTiming = null;
+        }
+
+        /// <summary>
+        /// Whether playback should jump back to <see cref="From"/>. Call once per frame, paused or not.
+        /// True only when the loop is on, audio is playing, and the timing moved from at or before
+        /// <see cref="To"/> to past it since the last call. Seeking anywhere never restarts by itself,
+        /// and playback that starts before <see cref="From"/> plays into the range and loops at the end.
         /// </summary>
         public bool ShouldRestart(int timing, bool isPlaying)
         {
-            if (!Enabled || !isPlaying)
-            {
-                return false;
-            }
-
-            return timing > To || timing < From - prerollChartMs - RestartToleranceMs;
+            bool crossedEnd = Enabled && isPlaying && lastTiming.HasValue
+                && lastTiming.Value <= To && timing > To;
+            lastTiming = timing;
+            return crossedEnd;
         }
 
         private static int Clamp(int value, int min, int max)

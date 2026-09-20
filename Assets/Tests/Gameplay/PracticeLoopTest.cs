@@ -73,7 +73,7 @@ namespace Tests.Unit
         {
             int raised = 0;
             loop.OnRangeChange += () => raised++;
-            loop.MarkRestarted(200, 1);
+            loop.MarkRestarted();
             Assert.AreEqual(1, loop.LoopCount);
             loop.SetRange(2000, 5000);
             Assert.AreEqual(1, raised);
@@ -84,9 +84,14 @@ namespace Tests.Unit
         public void RestartOnlyWhenEnabledAndPlaying()
         {
             loop.SetRange(2000, 5000);
+            loop.ShouldRestart(4900, true);
             Assert.IsFalse(loop.ShouldRestart(6000, isPlaying: true));
+
             loop.Enabled = true;
+            loop.ShouldRestart(4900, true);
             Assert.IsFalse(loop.ShouldRestart(6000, isPlaying: false));
+
+            loop.ShouldRestart(4900, true);
             Assert.IsTrue(loop.ShouldRestart(6000, isPlaying: true));
         }
 
@@ -95,22 +100,83 @@ namespace Tests.Unit
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
+            Assert.IsFalse(loop.ShouldRestart(4990, true));
             Assert.IsFalse(loop.ShouldRestart(5000, true));
             Assert.IsTrue(loop.ShouldRestart(5001, true));
         }
 
         [Test]
-        public void RestartBeforeStartAllowsToleranceAndLeadIn()
+        public void NoRestartBeforeStart()
         {
             loop.SetRange(2000, 5000);
             loop.Enabled = true;
-            Assert.IsFalse(loop.ShouldRestart(2000 - PracticeLoop.RestartToleranceMs, true));
-            Assert.IsTrue(loop.ShouldRestart(2000 - PracticeLoop.RestartToleranceMs - 1, true));
+            Assert.IsFalse(loop.ShouldRestart(1000, true));
+            Assert.IsFalse(loop.ShouldRestart(1500, true));
+            Assert.IsFalse(loop.ShouldRestart(2500, true));
+        }
 
-            // 500 ms real delay at 0.5x is 250 ms of chart time before A.
-            loop.MarkRestarted(500, 0.5f);
-            Assert.IsFalse(loop.ShouldRestart(1750 - PracticeLoop.RestartToleranceMs, true));
-            Assert.IsTrue(loop.ShouldRestart(1750 - PracticeLoop.RestartToleranceMs - 1, true));
+        [Test]
+        public void SeekPastEndDoesNotRestart()
+        {
+            loop.SetRange(2000, 5000);
+            loop.Enabled = true;
+            loop.ShouldRestart(3000, false);
+
+            // Seek while paused, then resume and keep playing past B.
+            Assert.IsFalse(loop.ShouldRestart(8000, false));
+            Assert.IsFalse(loop.ShouldRestart(8000, true));
+            Assert.IsFalse(loop.ShouldRestart(8100, true));
+        }
+
+        [Test]
+        public void SeekBeforeStartPlaysIntoRangeAndLoopsAtEnd()
+        {
+            loop.SetRange(2000, 5000);
+            loop.Enabled = true;
+            loop.ShouldRestart(3000, false);
+
+            Assert.IsFalse(loop.ShouldRestart(500, false));
+            Assert.IsFalse(loop.ShouldRestart(500, true));
+            Assert.IsFalse(loop.ShouldRestart(2500, true));
+            Assert.IsFalse(loop.ShouldRestart(4990, true));
+            Assert.IsTrue(loop.ShouldRestart(5010, true));
+        }
+
+        [Test]
+        public void RestartJumpBackDoesNotRestartAgain()
+        {
+            loop.SetRange(2000, 5000);
+            loop.Enabled = true;
+            loop.ShouldRestart(4990, true);
+            Assert.IsTrue(loop.ShouldRestart(5010, true));
+
+            // Lead-in starts before A.
+            Assert.IsFalse(loop.ShouldRestart(1000, true));
+            Assert.IsFalse(loop.ShouldRestart(1016, true));
+        }
+
+        [Test]
+        public void FrameSkipAcrossEndStillRestarts()
+        {
+            loop.SetRange(2000, 5000);
+            loop.Enabled = true;
+            loop.ShouldRestart(4800, true);
+            Assert.IsTrue(loop.ShouldRestart(5400, true));
+        }
+
+        [Test]
+        public void NoRestartUntilObservedAfterRangeChangeOrReset()
+        {
+            loop.SetRange(2000, 5000);
+            loop.Enabled = true;
+            loop.ShouldRestart(4000, true);
+
+            loop.SetTo(3000);
+            Assert.IsFalse(loop.ShouldRestart(4000, true));
+
+            loop.ShouldRestart(2900, true);
+            loop.ResetTracking();
+            Assert.IsFalse(loop.ShouldRestart(3100, true));
         }
 
         [Test]
