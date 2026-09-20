@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using ArcCreate.Utility;
 using TMPro;
 using UnityEngine;
@@ -161,7 +162,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
             if (zoomLabel != null && zoomLabelBars != bars)
             {
                 zoomLabelBars = bars;
-                zoomLabel.text = $"{bars} bars";
+                zoomLabel.text = I18n.S("Gameplay.Practice.ZoomBars", new Dictionary<string, object>()
+                {
+                    { "bars", bars },
+                });
             }
         }
 
@@ -220,7 +224,14 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             int barFrom = grid.BarIndexAt(loop.From - offset);
             int barTo = grid.BarIndexAt(loop.To - offset);
-            readout.text = $"A {FormatTime(loop.From)} · bar {barFrom + 1}     {barTo - barFrom} bars     B {FormatTime(loop.To)} · bar {barTo + 1}";
+            readout.text = I18n.S("Gameplay.Practice.LoopReadout", new Dictionary<string, object>()
+            {
+                { "from", FormatTime(loop.From) },
+                { "barFrom", barFrom + 1 },
+                { "bars", barTo - barFrom },
+                { "to", FormatTime(loop.To) },
+                { "barTo", barTo + 1 },
+            });
         }
 
         private void PlaceMarker(RectTransform marker, int audioTiming, bool enabled)
