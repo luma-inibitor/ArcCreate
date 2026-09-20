@@ -79,6 +79,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             gameplayData.OnChartTimingEdit += InvalidateGrid;
             gameplayData.OnChartEdit += InvalidateGrid;
             speedSlider.OnValueChanged += OnSpeedChange;
+            speedText.text = FormatSpeed(speedSlider.Value);
             repeatOffButton.onClick.AddListener(TurnRepeatOff);
             repeatOnButton.onClick.AddListener(TurnRepeatOn);
             repeatFromButton.onClick.AddListener(SetRepeatFrom);
@@ -138,9 +139,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void OnSpeedChange(float speed)
         {
-            speedText.text = speed.ToString("f2") + "x";
+            speedText.text = FormatSpeed(speed);
             gameplayData.PlaybackSpeed.Value = speed;
         }
+
+        private static string FormatSpeed(float speed) => speed.ToString("f2") + "x";
 
         private void TurnRepeatOff()
         {
