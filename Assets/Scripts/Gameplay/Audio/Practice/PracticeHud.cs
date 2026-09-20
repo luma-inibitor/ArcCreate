@@ -110,22 +110,22 @@ namespace ArcCreate.Gameplay.Audio.Practice
             if (loop.Enabled != shownEnabled || stats.LoopCount != shownLoops)
             {
                 shownLoops = stats.LoopCount;
-                loopText.text = loop.Enabled
+                SetChip(loopText, loop.Enabled
                     ? I18n.S("Gameplay.Practice.Hud.Loop", new Dictionary<string, object>() { { "count", stats.LoopCount } })
-                    : string.Empty;
+                    : string.Empty);
             }
 
             if (loop.Enabled != shownEnabled || loop.From != shownFrom || loop.To != shownTo)
             {
                 shownFrom = loop.From;
                 shownTo = loop.To;
-                rangeText.text = loop.Enabled
+                SetChip(rangeText, loop.Enabled
                     ? I18n.S("Gameplay.Practice.Hud.Range", new Dictionary<string, object>()
                     {
                         { "from", grid.BarIndexAt(loop.From - offset) + 1 },
                         { "to", grid.BarIndexAt(loop.To - offset) + 1 },
                     })
-                    : string.Empty;
+                    : string.Empty);
 
                 if (progressMarker != null)
                 {
@@ -141,6 +141,15 @@ namespace ArcCreate.Gameplay.Audio.Practice
             shownEnabled = loop.Enabled;
             UpdateCountIn(loop, grid, offset, speed);
             UpdateAccuracy(stats);
+        }
+
+        /// <summary>
+        /// A chip is its text's parent; an empty chip is hidden rather than left as a dark box.
+        /// </summary>
+        private static void SetChip(TMP_Text text, string value)
+        {
+            text.text = value;
+            text.transform.parent.gameObject.SetActive(!string.IsNullOrEmpty(value));
         }
 
         /// <summary>
