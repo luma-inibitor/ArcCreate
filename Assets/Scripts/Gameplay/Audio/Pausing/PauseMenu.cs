@@ -145,6 +145,19 @@ namespace ArcCreate.Gameplay.Audio
             DisablePauseButton().Forget();
         }
 
+        /// <summary>
+        /// Hide the pause screen and start playback at an audio timing after a delay, like Resume does
+        /// at the current timing. Used by the practice loop's restart button.
+        /// </summary>
+        public void ResumeAt(int audioTiming, int delayMs)
+        {
+            pauseScreen.SetActive(false);
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(audioTiming, delayMs);
+            Services.Judgement.RefreshInputHandler();
+            DisablePauseButton().Forget();
+        }
+
         private void OnRetryButton()
         {
             Values.RetryCount += 1;
