@@ -1026,6 +1026,13 @@ Gameplay:
       Offset: "avg {offset} ms · {early} early · {late} late"
       Early: early
       Late: late
+    Hud:
+      Speed: "{speed}x"
+      Loop: "loop {count}"
+      Range: "A {from} – B {to}"
+      CountIn: "bar {bar} in {beats}"
+      Accuracy: "{percent}%"
+      NoAccuracy: "–"
   Selection:
     SelectStatus:
       Singular: |-
