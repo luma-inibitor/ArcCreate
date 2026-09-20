@@ -11,7 +11,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
         public const int MinLengthMs = 1000;
 
         /// <summary>
-        /// Lead-in used when the bar length at <see cref="From"/> is unknown.
+        /// Lead-in used for <see cref="LeadInMode.TwoSeconds"/>, and for the bar modes when the bar
+        /// length at <see cref="From"/> is unknown.
         /// </summary>
         public const int FallbackLeadInMs = 2000;
 
@@ -21,6 +22,26 @@ namespace ArcCreate.Gameplay.Audio.Practice
         public const int EndToleranceMs = 100;
 
         private int? lastTiming;
+
+        /// <summary>
+        /// How much runs before <see cref="From"/> when the loop restarts, so notes scroll in.
+        /// </summary>
+        public enum LeadInMode
+        {
+            /// <summary>Restart right at <see cref="From"/>, with only the resume delay.</summary>
+            None,
+
+            /// <summary>One bar of the chart at <see cref="From"/>.</summary>
+            OneBar,
+
+            /// <summary>Two bars of the chart at <see cref="From"/>.</summary>
+            TwoBars,
+
+            /// <summary>Two seconds of real time, regardless of tempo.</summary>
+            TwoSeconds,
+        }
+
+        public LeadInMode LeadIn { get; set; } = LeadInMode.OneBar;
 
         public int AudioLength { get; private set; }
 
@@ -84,8 +105,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
         }
 
         /// <summary>
-        /// Real-time delay in ms to pass to PlayWithDelay when restarting, so that one bar of
-        /// lead-in scrolls past before the audio reaches <see cref="From"/>.
+        /// Real-time delay in ms to pass to PlayWithDelay when restarting, so that the
+        /// <see cref="LeadIn"/> scrolls past before the audio reaches <see cref="From"/>.
+        /// Never shorter than <see cref="Values.DelayBeforeAudioResume"/>.
         /// </summary>
         /// <param name="barLengthMs">Length of one bar at <see cref="From"/> in chart ms, or 0 if unknown.</param>
         /// <param name="playbackSpeed">Current playback speed.</param>
@@ -93,12 +115,27 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             playbackSpeed = playbackSpeed <= 0 ? 1 : playbackSpeed;
 
+            int bars;
+            switch (LeadIn)
+            {
+                case LeadInMode.None:
+                    return Values.DelayBeforeAudioResume;
+                case LeadInMode.TwoSeconds:
+                    return Math.Max(FallbackLeadInMs, Values.DelayBeforeAudioResume);
+                case LeadInMode.TwoBars:
+                    bars = 2;
+                    break;
+                default:
+                    bars = 1;
+                    break;
+            }
+
             if (barLengthMs <= 0)
             {
                 return FallbackLeadInMs;
             }
 
-            int delay = (int)Math.Ceiling(barLengthMs / playbackSpeed);
+            int delay = (int)Math.Ceiling(bars * barLengthMs / playbackSpeed);
             return Math.Max(delay, Values.DelayBeforeAudioResume);
         }
 

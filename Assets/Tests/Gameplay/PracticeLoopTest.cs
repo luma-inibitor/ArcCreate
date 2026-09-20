@@ -192,6 +192,38 @@ namespace Tests.Unit
         }
 
         [Test]
+        public void LeadInDefaultsToOneBar()
+        {
+            Assert.AreEqual(PracticeLoop.LeadInMode.OneBar, loop.LeadIn);
+        }
+
+        [Test]
+        public void RestartDelayWithoutLeadInIsTheResumeDelay()
+        {
+            loop.LeadIn = PracticeLoop.LeadInMode.None;
+            Assert.AreEqual(Values.DelayBeforeAudioResume, loop.RestartDelayMs(1000, 1f));
+            Assert.AreEqual(Values.DelayBeforeAudioResume, loop.RestartDelayMs(0, 0.5f));
+        }
+
+        [Test]
+        public void RestartDelayWithTwoBarsDoublesTheBar()
+        {
+            loop.LeadIn = PracticeLoop.LeadInMode.TwoBars;
+            Assert.AreEqual(2000, loop.RestartDelayMs(1000, 1f));
+            Assert.AreEqual(4000, loop.RestartDelayMs(1000, 0.5f));
+            Assert.AreEqual(PracticeLoop.FallbackLeadInMs, loop.RestartDelayMs(0, 1f));
+        }
+
+        [Test]
+        public void RestartDelayWithTwoSecondsIgnoresTempoAndSpeed()
+        {
+            loop.LeadIn = PracticeLoop.LeadInMode.TwoSeconds;
+            Assert.AreEqual(2000, loop.RestartDelayMs(1000, 1f));
+            Assert.AreEqual(2000, loop.RestartDelayMs(10, 0.25f));
+            Assert.AreEqual(2000, loop.RestartDelayMs(0, 1f));
+        }
+
+        [Test]
         public void ReachedEndOnlyWhenEnabledAndRangeEndsAtTheAudio()
         {
             loop.SetRange(2000, 10000);
