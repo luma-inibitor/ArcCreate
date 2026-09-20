@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ArcCreate.Data;
 using ArcCreate.Gameplay.Judgement;
@@ -9,6 +10,11 @@ namespace ArcCreate.Gameplay.Score
     /// </summary>
     public interface IScoreService
     {
+        /// <summary>
+        /// Raised for every judgement passed to <see cref="ProcessJudgement"/>, with its offset when it has one.
+        /// </summary>
+        event Action<JudgementResult, Option<int>> OnJudgement;
+
         int CurrentScore { get; }
 
         int CurrentCombo { get; }

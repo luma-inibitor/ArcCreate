@@ -40,6 +40,8 @@ namespace ArcCreate.Gameplay.Score
         private readonly List<(int timingGroup, JudgementResult result)> resultReceivedThisFrame = new List<(int, JudgementResult)>(20);
         private Grade[] cachedGradeOptions;
 
+        public event Action<JudgementResult, Option<int>> OnJudgement;
+
         public int CurrentScore => (int)Math.Round(CurrentScoreTotal);
 
         public int CurrentCombo => currentCombo;
@@ -64,6 +66,7 @@ namespace ArcCreate.Gameplay.Score
         {
             resultReceivedThisFrame.Add((timingGroup, result));
             SetJudgementCount(result, GetJudgementCount(result) + 1);
+            OnJudgement?.Invoke(result, offset);
 
             if (result.IsMiss())
             {
