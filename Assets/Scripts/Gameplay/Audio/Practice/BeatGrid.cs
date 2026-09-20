@@ -59,6 +59,19 @@ namespace ArcCreate.Gameplay.Audio.Practice
         }
 
         /// <summary>
+        /// Length in ms of one beat at the given timing, or 0 if the tempo is not usable.
+        /// </summary>
+        public double BeatLengthAt(int timing)
+        {
+            if (IsEmpty)
+            {
+                return 0;
+            }
+
+            return BeatLengthOf(timings[SegmentIndexAt(timing)]);
+        }
+
+        /// <summary>
         /// Snap a timing to a bar line: the nearest one, the one at or before it, or the one at or after it.
         /// Returns the timing unchanged if the grid has no usable tempo at that point. Every timing event
         /// starts a new bar, so the line above a timing is capped at the next event.

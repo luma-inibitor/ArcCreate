@@ -26,6 +26,15 @@ namespace Tests.Unit
             Assert.AreEqual(1000, grid.BarLengthAt(8000), 1e-6);
         }
 
+        [Test]
+        public void BeatLengthFollowsTheSegment()
+        {
+            BeatGrid grid = TwoTempos();
+            Assert.AreEqual(500, grid.BeatLengthAt(0), 1e-6);
+            Assert.AreEqual(250, grid.BeatLengthAt(8000), 1e-6);
+            Assert.AreEqual(0, new BeatGrid(new List<TimingEvent>()).BeatLengthAt(0), 1e-6);
+        }
+
         [TestCase(0, 0)]
         [TestCase(900, 0)]
         [TestCase(1100, 2000)]
