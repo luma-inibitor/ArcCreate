@@ -1009,6 +1009,23 @@ Gameplay:
       To: Set ending point 
     ZoomSeconds: "{seconds} s"
     LoopReadout: "A {from} · bar {barFrom}     {bars} bars     B {to} · bar {barTo}"
+    Loop: Loop
+    RestartLoop: Restart loop
+    LeadIn:
+      Title: Lead-in
+      None: "0"
+      OneBar: 1 bar
+      TwoBars: 2 bars
+      TwoSeconds: 2 s
+    Stats:
+      Title: This section
+      Loops: "{count} loops"
+      Accuracy: "{percent}% acc"
+      NoNotes: no notes yet
+      Counts: "{max} max · {pure} pure · {far} far · {lost} lost"
+      Offset: "avg {offset} ms · {early} early · {late} late"
+      Early: early
+      Late: late
   Selection:
     SelectStatus:
       Singular: |-

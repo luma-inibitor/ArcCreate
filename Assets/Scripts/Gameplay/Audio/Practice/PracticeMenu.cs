@@ -1,3 +1,4 @@
+using ArcCreate.Gameplay.Judgement;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,6 +9,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
     {
         [SerializeField] private GameplayData gameplayData;
         [SerializeField] private PracticeTimeline timeline;
+        [SerializeField] private PauseMenu pauseMenu;
+        [SerializeField] private Button restartLoopButton;
 
         [Header("Speed")]
         [SerializeField] private SpeedSlider speedSlider;
@@ -21,10 +24,25 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private Button repeatFromButton;
         [SerializeField] private Button repeatToButton;
 
+        [Header("Lead-in")]
+        [Tooltip("One per PracticeLoop.LeadInMode, in enum order.")]
+        [SerializeField] private Button[] leadInButtons;
+        [SerializeField] private Color leadInColor = new Color(0, 0, 0, 0.3f);
+        [SerializeField] private Color leadInSelectedColor = new Color(0.3882353f, 0.7176471f, 0.81960785f, 0.78431374f);
+
+        [Header("Stats")]
+        [SerializeField] private PracticeStatsView statsView;
+
         private readonly PracticeLoop loop = new PracticeLoop();
+        private readonly PracticeStats stats = new PracticeStats();
         private BeatGrid grid;
 
         public PracticeLoop Loop => loop;
+
+        /// <summary>
+        /// Gets the judgement statistics for the current loop section.
+        /// </summary>
+        public PracticeStats Stats => stats;
 
         /// <summary>
         /// Gets the bar and beat grid of timing group 0, rebuilt after chart or timing edits.
@@ -65,10 +83,35 @@ namespace ArcCreate.Gameplay.Audio.Practice
             repeatOnButton.onClick.AddListener(TurnRepeatOn);
             repeatFromButton.onClick.AddListener(SetRepeatFrom);
             repeatToButton.onClick.AddListener(SetRepeatTo);
+            restartLoopButton.onClick.AddListener(RestartFromPause);
+            for (int i = 0; i < leadInButtons.Length; i++)
+            {
+                PracticeLoop.LeadInMode mode = (PracticeLoop.LeadInMode)i;
+                leadInButtons[i].onClick.AddListener(() => SetLeadIn(mode));
+            }
+
+            UpdateLeadInButtons();
+        }
+
+        private void Start()
+        {
+            // Services are set up in Services.Awake; this object is enabled afterwards, but Start is the safer order.
+            Services.Score.OnJudgement += OnJudgement;
         }
 
         private void OnDestroy()
         {
+            if (Services.Score != null)
+            {
+                Services.Score.OnJudgement -= OnJudgement;
+            }
+
+            restartLoopButton.onClick.RemoveListener(RestartFromPause);
+            foreach (Button button in leadInButtons)
+            {
+                button.onClick.RemoveAllListeners();
+            }
+
             gameplayData.AudioClip.OnValueChange -= OnClipChange;
             gameplayData.OnGameplayUpdate -= CheckRepeat;
             gameplayData.OnChartTimingEdit -= InvalidateGrid;
@@ -115,6 +158,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             repeatOff.SetActive(false);
             repeatOn.SetActive(true);
             UpdateRepeatRange();
+            ResetStats();
             gameplayData.OnGameplayUpdate -= CheckRepeat;
             gameplayData.OnGameplayUpdate += CheckRepeat;
         }
@@ -123,12 +167,43 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             loop.SetFrom(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Down));
             UpdateRepeatRange();
+            ResetStats();
         }
 
         private void SetRepeatTo()
         {
             loop.SetTo(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Up));
             UpdateRepeatRange();
+            ResetStats();
+        }
+
+        private void SetLeadIn(PracticeLoop.LeadInMode mode)
+        {
+            loop.LeadIn = mode;
+            UpdateLeadInButtons();
+        }
+
+        private void UpdateLeadInButtons()
+        {
+            for (int i = 0; i < leadInButtons.Length; i++)
+            {
+                bool selected = (PracticeLoop.LeadInMode)i == loop.LeadIn;
+                leadInButtons[i].image.color = selected ? leadInSelectedColor : leadInColor;
+            }
+        }
+
+        private void OnJudgement(JudgementResult result, Option<int> offset)
+        {
+            stats.Record(result, offset.HasValue ? offset.Value : (int?)null);
+        }
+
+        /// <summary>
+        /// The section changed, so its statistics start over. The box is visible whenever this runs.
+        /// </summary>
+        private void ResetStats()
+        {
+            stats.Reset();
+            statsView.Refresh();
         }
 
         /// <summary>
@@ -147,6 +222,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             }
 
             UpdateRepeatRange();
+            ResetStats();
         }
 
         private int SnapToBar(int audioTiming, BeatGrid.Rounding rounding = BeatGrid.Rounding.Nearest)
@@ -171,11 +247,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void Restart()
         {
-            float speed = gameplayData.PlaybackSpeed.Value;
-            double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
-            int delay = loop.RestartDelayMs(barLength, speed);
+            stats.CountLoop();
             Services.Audio.Pause();
-            Services.Audio.PlayWithDelay(loop.From, delay);
+            Services.Audio.PlayWithDelay(loop.From, RestartDelay());
+        }
+
+        /// <summary>
+        /// The "Restart loop" button: leave the pause screen and play from A with the lead-in.
+        /// </summary>
+        private void RestartFromPause()
+        {
+            loop.ResetTracking();
+            pauseMenu.ResumeAt(loop.From, RestartDelay());
+        }
+
+        private int RestartDelay()
+        {
+            double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
+            return loop.RestartDelayMs(barLength, gameplayData.PlaybackSpeed.Value);
         }
     }
 }
