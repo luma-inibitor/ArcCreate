@@ -117,8 +117,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
             int playheadTiming = Services.Audio.AudioTiming;
             BeatGrid grid = menu.Grid;
 
-            window.SetBounds(0, Services.Audio.AudioLength);
-            window.CenterOn(playheadTiming, (int)Math.Round(ScaleBarMs(grid, offset) * bars));
+            // The window may reach before 0 so the playhead stays centred and visible during the lead-in.
+            int span = (int)Math.Round(ScaleBarMs(grid, offset) * bars);
+            window.SetBounds(Math.Min(0, playheadTiming - (span / 2)), Services.Audio.AudioLength);
+            window.CenterOn(playheadTiming, span);
 
             chartStrip.SetWindow(window.From - offset, window.To - offset, grid);
             UpdateWaveform(clip);
@@ -177,7 +179,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 waveformMaterial.mainTexture = texture;
             }
 
-            waveformMaterial.SetInt(fromSampleShaderId, WaveformGenerator.SecondToSample(window.From / 1000f, clip));
+            // There is no audio before 0, and the shader cannot sample there, so the waveform starts at 0.
+            RectTransform waveformRect = waveform.rectTransform;
+            waveformRect.anchorMin = new Vector2(Mathf.Clamp01(window.Normalize(0)), waveformRect.anchorMin.y);
+            waveformRect.offsetMin = new Vector2(0, waveformRect.offsetMin.y);
+            waveformMaterial.SetInt(fromSampleShaderId, WaveformGenerator.SecondToSample(Mathf.Max(0, window.From) / 1000f, clip));
             waveformMaterial.SetInt(toSampleShaderId, WaveformGenerator.SecondToSample(window.To / 1000f, clip));
         }
 
