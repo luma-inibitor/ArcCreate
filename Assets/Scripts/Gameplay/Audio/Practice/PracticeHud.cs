@@ -8,7 +8,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
 {
     /// <summary>
     /// The practice strip on the unpaused HUD: playback speed, loop count and A-B bars next to the pause
-    /// button, a count-in during the lead-in, and the loop range on the progress bar.
+    /// button with jump buttons, a count-in during the lead-in, and the loop range on the progress bar.
     /// Active only in practice mode.
     /// </summary>
     public class PracticeHud : MonoBehaviour
@@ -24,6 +24,13 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private TMP_Text rangeText;
         [SerializeField] private TMP_Text countInText;
 
+        [Header("Jumps")]
+        [SerializeField] private Button toStartButton;
+        [SerializeField] private Button backButton;
+        [SerializeField] private Button forwardButton;
+        [SerializeField] private Button toEndButton;
+        [SerializeField] private int jumpMs = 5000;
+
         [Header("Elsewhere on the HUD")]
         [SerializeField] private RectTransform progressMarker;
 
@@ -37,11 +44,19 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void Awake()
         {
             stripButton.onClick.AddListener(OpenPause);
+            toStartButton.onClick.AddListener(JumpToStart);
+            backButton.onClick.AddListener(JumpBack);
+            forwardButton.onClick.AddListener(JumpForward);
+            toEndButton.onClick.AddListener(JumpToEnd);
         }
 
         private void OnDestroy()
         {
             stripButton.onClick.RemoveListener(OpenPause);
+            toStartButton.onClick.RemoveListener(JumpToStart);
+            backButton.onClick.RemoveListener(JumpBack);
+            forwardButton.onClick.RemoveListener(JumpForward);
+            toEndButton.onClick.RemoveListener(JumpToEnd);
         }
 
         private void OnEnable()
@@ -58,6 +73,48 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void OpenPause()
         {
             pauseButton.Activate();
+        }
+
+        private void JumpToStart()
+        {
+            practiceMenu.JumpToLoopStart();
+        }
+
+        private void JumpBack()
+        {
+            JumpBy(-jumpMs);
+        }
+
+        private void JumpForward()
+        {
+            JumpBy(jumpMs);
+        }
+
+        /// <summary>
+        /// Skip to the last few seconds of the loop, or of the song when repeat is off. Landing exactly
+        /// on B would only restart the loop.
+        /// </summary>
+        private void JumpToEnd()
+        {
+            PracticeLoop loop = practiceMenu.Loop;
+            int end = loop.Enabled ? loop.To : loop.AudioLength;
+            int start = loop.Enabled ? loop.From : 0;
+            JumpTo(Mathf.Max(start, end - JumpDuration()));
+        }
+
+        private void JumpBy(int ms)
+        {
+            JumpTo(Services.Audio.AudioTiming + (ms < 0 ? -JumpDuration() : JumpDuration()));
+        }
+
+        private int JumpDuration() => Mathf.RoundToInt(jumpMs * gameplayData.PlaybackSpeed.Value);
+
+        private void JumpTo(int audioTiming)
+        {
+            audioTiming = Mathf.Clamp(audioTiming, 0, Services.Audio.AudioLength);
+            practiceMenu.Loop.ResetTracking();
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(audioTiming, Values.DelayBeforeAudioResume);
         }
 
         private void Invalidate()

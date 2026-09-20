@@ -217,6 +217,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
             Services.Audio.PlayWithDelay(loop.From, RestartDelay());
         }
 
+        /// <summary>
+        /// Jump back to A with the lead-in while playing, for the HUD's skip-to-start button.
+        /// </summary>
+        public void JumpToLoopStart()
+        {
+            loop.ResetTracking();
+            Restart();
+        }
+
+        /// <summary>
+        /// The "Restart loop" button: leave the pause screen and play from A with the lead-in.
+        /// </summary>
+        private void RestartFromPause()
+        {
+            loop.ResetTracking();
+            pauseMenu.ResumeAt(loop.From, RestartDelay());
+        }
+
         private int RestartDelay()
         {
             double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
