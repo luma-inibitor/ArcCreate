@@ -155,43 +155,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         }
 
         /// <summary>
-        /// The bar length that covers the most time in [from, to], or 0 if no segment there has a usable tempo.
-        /// Charts often have short tempo changes for effects, so this is a steadier scale than the bar at one point.
-        /// </summary>
-        public double TypicalBarLength(int from, int to)
-        {
-            var durationByBar = new Dictionary<double, double>();
-            for (int i = 0; i < timings.Count; i++)
-            {
-                double bar = BarLengthOf(timings[i]);
-                double start = i == 0 ? Math.Min(from, timings[i].Timing) : timings[i].Timing;
-                double end = i + 1 < timings.Count ? timings[i + 1].Timing : Math.Max(to, timings[i].Timing);
-                double covered = Math.Min(end, to) - Math.Max(start, from);
-                if (bar <= 0 || covered <= 0)
-                {
-                    continue;
-                }
-
-                double key = Math.Round(bar, 3);
-                durationByBar.TryGetValue(key, out double total);
-                durationByBar[key] = total + covered;
-            }
-
-            double typical = 0;
-            double longest = 0;
-            foreach (KeyValuePair<double, double> entry in durationByBar)
-            {
-                if (entry.Value > longest)
-                {
-                    longest = entry.Value;
-                    typical = entry.Key;
-                }
-            }
-
-            return typical;
-        }
-
-        /// <summary>
         /// Beat lines in [from, to], in order, flagged when they start a bar.
         /// Every timing event starts a new bar. Segments without a usable tempo produce no lines.
         /// </summary>

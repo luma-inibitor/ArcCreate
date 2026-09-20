@@ -106,26 +106,6 @@ namespace Tests.Unit
         }
 
         [Test]
-        public void TypicalBarLengthIsTheTempoCoveringMostTime()
-        {
-            // 2000 ms bars for 0..8000, then 1000 ms bars to the end.
-            Assert.AreEqual(2000, TwoTempos().TypicalBarLength(0, 12000), 1e-6);
-            Assert.AreEqual(1000, TwoTempos().TypicalBarLength(0, 20000), 1e-6);
-
-            // A short half-speed section does not change the typical bar.
-            BeatGrid gimmick = new BeatGrid(new List<TimingEvent> { Ev(0, 120, 4), Ev(4000, 60, 4), Ev(6000, 120, 4) });
-            Assert.AreEqual(2000, gimmick.TypicalBarLength(0, 30000), 1e-6);
-        }
-
-        [Test]
-        public void TypicalBarLengthIgnoresUnusableTempos()
-        {
-            BeatGrid stops = new BeatGrid(new List<TimingEvent> { Ev(0, 120, 4), Ev(1000, 0, 4), Ev(9000, 120, 4) });
-            Assert.AreEqual(2000, stops.TypicalBarLength(0, 10000), 1e-6);
-            Assert.AreEqual(0, new BeatGrid(new List<TimingEvent>()).TypicalBarLength(0, 10000), 1e-6);
-        }
-
-        [Test]
         public void UnusableTempoLeavesTimingAlone()
         {
             BeatGrid zeroBpm = new BeatGrid(new List<TimingEvent> { Ev(0, 0, 4) });

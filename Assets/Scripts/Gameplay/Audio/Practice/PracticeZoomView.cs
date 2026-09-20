@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using ArcCreate.Utility;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace ArcCreate.Gameplay.Audio.Practice
 {
     /// <summary>
-    /// Zoomed loop editor: a chart strip and a waveform over a few bars around the playhead,
+    /// Zoomed loop editor: a chart strip and a waveform over a few seconds around the playhead,
     /// sharing one time axis, with the loop range, lead-in and draggable A/B handles drawn on top.
     /// </summary>
     public class PracticeZoomView : MonoBehaviour
     {
-        public const int MinBars = 2;
-        public const int MaxBars = 32;
-        private const int FallbackBarMs = 2000;
+        public const int MinSeconds = 2;
+        public const int MaxSeconds = 32;
 
         [SerializeField] private GameplayData gameplayData;
         [SerializeField] private PracticeMenu menu;
@@ -40,7 +40,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private Button zoomOutButton;
         [SerializeField] private TMP_Text zoomLabel;
         [SerializeField] private RectTransform overviewWindow;
-        [SerializeField] private int bars = 8;
+        [FormerlySerializedAs("bars")]
+        [SerializeField] private int seconds = 8;
 
         private readonly TimelineWindow window = new TimelineWindow();
         private readonly int fromSampleShaderId = Shader.PropertyToID("_FromSample");
@@ -49,9 +50,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private int readoutFrom = int.MinValue;
         private int readoutTo = int.MinValue;
         private bool readoutEnabled;
-        private int zoomLabelBars = -1;
-        private BeatGrid scaleGrid;
-        private double scaleBarMs;
+        private int zoomLabelSeconds = -1;
 
         /// <summary>
         /// Audio timing under a screen position on the time axis, clamped to the visible window.
@@ -119,7 +118,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
             BeatGrid grid = menu.Grid;
 
             // The window may reach before 0 so the playhead stays centred and visible during the lead-in.
-            int span = (int)Math.Round(ScaleBarMs(grid, offset) * bars);
+            int span = seconds * 1000;
             window.SetBounds(Math.Min(0, playheadTiming - (span / 2)), Services.Audio.AudioLength);
             window.CenterOn(playheadTiming, span);
 
@@ -128,21 +127,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             PlaceMarker(playhead, playheadTiming, true);
             UpdateLoop(grid, offset);
             UpdateZoomIndicator();
-        }
-
-        /// <summary>
-        /// Length of one bar of zoom. It is the chart's typical bar rather than the bar at the playhead, so the
-        /// window keeps its size through short tempo changes and "N bars" means the same time across the song.
-        /// </summary>
-        private double ScaleBarMs(BeatGrid grid, int offset)
-        {
-            if (grid != scaleGrid)
-            {
-                scaleGrid = grid;
-                scaleBarMs = grid.TypicalBarLength(-offset, Services.Audio.AudioLength - offset);
-            }
-
-            return scaleBarMs > 0 ? scaleBarMs : FallbackBarMs;
         }
 
         /// <summary>
@@ -159,12 +143,12 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 overviewWindow.offsetMax = new Vector2(0, overviewWindow.offsetMax.y);
             }
 
-            if (zoomLabel != null && zoomLabelBars != bars)
+            if (zoomLabel != null && zoomLabelSeconds != seconds)
             {
-                zoomLabelBars = bars;
-                zoomLabel.text = I18n.S("Gameplay.Practice.ZoomBars", new Dictionary<string, object>()
+                zoomLabelSeconds = seconds;
+                zoomLabel.text = I18n.S("Gameplay.Practice.ZoomSeconds", new Dictionary<string, object>()
                 {
-                    { "bars", bars },
+                    { "seconds", seconds },
                 });
             }
         }
@@ -292,12 +276,12 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void ZoomIn()
         {
-            bars = Mathf.Max(MinBars, bars / 2);
+            seconds = Mathf.Max(MinSeconds, seconds / 2);
         }
 
         private void ZoomOut()
         {
-            bars = Mathf.Min(MaxBars, bars * 2);
+            seconds = Mathf.Min(MaxSeconds, seconds * 2);
         }
 
         private void RefreshStrip()

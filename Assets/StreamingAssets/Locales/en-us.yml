@@ -1007,7 +1007,7 @@ Gameplay:
       Off: Repeat Off
       From: Set starting point
       To: Set ending point 
-    ZoomBars: "{bars} bars"
+    ZoomSeconds: "{seconds} s"
     LoopReadout: "A {from} · bar {barFrom}     {bars} bars     B {to} · bar {barTo}"
   Selection:
     SelectStatus:
