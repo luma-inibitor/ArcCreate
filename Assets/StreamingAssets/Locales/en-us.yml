@@ -1008,7 +1008,7 @@ Gameplay:
       From: Set starting point
       To: Set ending point 
     ZoomSeconds: "{seconds} s"
-    LoopReadout: "A {from} · bar {barFrom}     {bars} bars     B {to} · bar {barTo}"
+    LoopReadout: "A {from}   →   B {to}      {seconds} s"
     Loop: Loop
     RestartLoop: Restart loop
     LeadIn:

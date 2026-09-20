@@ -206,15 +206,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 return;
             }
 
-            int barFrom = grid.BarIndexAt(loop.From - offset);
-            int barTo = grid.BarIndexAt(loop.To - offset);
             readout.text = I18n.S("Gameplay.Practice.LoopReadout", new Dictionary<string, object>()
             {
                 { "from", FormatTime(loop.From) },
-                { "barFrom", barFrom + 1 },
-                { "bars", barTo - barFrom },
                 { "to", FormatTime(loop.To) },
-                { "barTo", barTo + 1 },
+                { "seconds", (loop.LengthMs / 1000f).ToString("0.0") },
             });
         }
 
