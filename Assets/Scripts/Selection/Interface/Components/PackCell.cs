@@ -30,6 +30,7 @@ namespace ArcCreate.Selection.Interface
 
             if (storage.TryAssignTextureFromCache(image, pack, pack.ImagePath))
             {
+                FitCover();
                 MarkFullyLoaded();
             }
         }
@@ -37,6 +38,40 @@ namespace ArcCreate.Selection.Interface
         public override async UniTask LoadCellFully(CellData cellData, CancellationToken cancellationToken)
         {
             await storage.AssignTexture(image, pack, pack.ImagePath);
+            FitCover();
+        }
+
+        /// <summary>
+        /// Crop the pack image to the cell instead of stretching it: keep its aspect ratio, fill the cell,
+        /// and cut the overflow evenly from both sides.
+        /// </summary>
+        private void FitCover()
+        {
+            Texture texture = image.texture;
+            if (texture == null || texture.height == 0)
+            {
+                image.uvRect = new Rect(0, 0, 1, 1);
+                return;
+            }
+
+            Rect rect = image.rectTransform.rect;
+            if (rect.height <= 0)
+            {
+                return;
+            }
+
+            float textureAspect = (float)texture.width / texture.height;
+            float cellAspect = rect.width / rect.height;
+            if (textureAspect > cellAspect)
+            {
+                float width = cellAspect / textureAspect;
+                image.uvRect = new Rect((1 - width) / 2, 0, width, 1);
+            }
+            else
+            {
+                float height = textureAspect / cellAspect;
+                image.uvRect = new Rect(0, (1 - height) / 2, 1, height);
+            }
         }
 
         private void Awake()
