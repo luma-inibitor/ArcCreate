@@ -15,6 +15,12 @@ namespace ArcCreate.Gameplay.Score
         /// </summary>
         event Action<JudgementResult, Option<int>> OnJudgement;
 
+        /// <summary>
+        /// Gets or sets whether the practice HUD owns the score text and indicators: while set, the score
+        /// display is not written and the FR/PM indicators are hidden.
+        /// </summary>
+        bool PracticeDisplay { get; set; }
+
         int CurrentScore { get; }
 
         int CurrentCombo { get; }

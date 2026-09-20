@@ -42,6 +42,22 @@ namespace ArcCreate.Gameplay.Score
 
         public event Action<JudgementResult, Option<int>> OnJudgement;
 
+        private bool practiceDisplay;
+
+        public bool PracticeDisplay
+        {
+            get => practiceDisplay;
+            set
+            {
+                practiceDisplay = value;
+                OnFrPmPositionSettings(Settings.FrPmIndicatorPosition.Value);
+                if (!value)
+                {
+                    UpdateDisplay();
+                }
+            }
+        }
+
         public int CurrentScore => (int)Math.Round(CurrentScoreTotal);
 
         public int CurrentCombo => currentCombo;
@@ -230,6 +246,12 @@ namespace ArcCreate.Gameplay.Score
 
         private void SetScore(double score, double count)
         {
+            // The practice HUD writes section accuracy into the score text instead.
+            if (practiceDisplay)
+            {
+                return;
+            }
+
             int length = 0;
             double scorePerNote = noteCount != 0 ? (double)Constants.MaxScore / noteCount : 0;
             double theoreticalScore = count * (scorePerNote + 1);
@@ -386,7 +408,7 @@ namespace ArcCreate.Gameplay.Score
         private void OnFrPmPositionSettings(int pos)
         {
             var position = (FrPmPosition)pos;
-            if (position == FrPmPosition.Off)
+            if (position == FrPmPosition.Off || practiceDisplay)
             {
                 indicatorsContainer.gameObject.SetActive(false);
             }
