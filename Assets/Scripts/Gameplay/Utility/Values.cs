@@ -56,6 +56,7 @@ namespace ArcCreate.Gameplay
         public const int HoldHighlightPersistDuration = 50;
         public const int HoldParticlePersistDuration = 100;
         public const int BeatlineThickness = 20;
+        public const float MaxBeatlineBpm = 10000;
 
         // Judgement
         public const int ScoreModifyDelay = 500;
