@@ -37,6 +37,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [Header("Zoom")]
         [SerializeField] private Button zoomInButton;
         [SerializeField] private Button zoomOutButton;
+        [SerializeField] private TMP_Text zoomLabel;
+        [SerializeField] private RectTransform overviewWindow;
         [SerializeField] private int bars = 8;
 
         private readonly TimelineWindow window = new TimelineWindow();
@@ -46,6 +48,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private int readoutFrom = int.MinValue;
         private int readoutTo = int.MinValue;
         private bool readoutEnabled;
+        private int zoomLabelBars = -1;
 
         /// <summary>
         /// Audio timing under a screen position on the time axis, clamped to the visible window.
@@ -125,6 +128,28 @@ namespace ArcCreate.Gameplay.Audio.Practice
             UpdateWaveform(clip);
             PlaceMarker(playhead, playheadTiming, true);
             UpdateLoop(grid, offset);
+            UpdateZoomIndicator();
+        }
+
+        /// <summary>
+        /// Box the visible window on the overview waveform and show the zoom level.
+        /// </summary>
+        private void UpdateZoomIndicator()
+        {
+            if (overviewWindow != null)
+            {
+                float length = Mathf.Max(1, Services.Audio.AudioLength);
+                overviewWindow.anchorMin = new Vector2(Mathf.Clamp01(window.From / length), overviewWindow.anchorMin.y);
+                overviewWindow.anchorMax = new Vector2(Mathf.Clamp01(window.To / length), overviewWindow.anchorMax.y);
+                overviewWindow.offsetMin = new Vector2(0, overviewWindow.offsetMin.y);
+                overviewWindow.offsetMax = new Vector2(0, overviewWindow.offsetMax.y);
+            }
+
+            if (zoomLabel != null && zoomLabelBars != bars)
+            {
+                zoomLabelBars = bars;
+                zoomLabel.text = $"{bars} bars";
+            }
         }
 
         private void UpdateWaveform(AudioClip clip)
