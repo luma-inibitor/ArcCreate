@@ -192,6 +192,23 @@ namespace Tests.Unit
         }
 
         [Test]
+        public void ReachedEndOnlyWhenEnabledAndRangeEndsAtTheAudio()
+        {
+            loop.SetRange(2000, 10000);
+            Assert.IsFalse(loop.ReachedEnd(10000));
+
+            loop.Enabled = true;
+            Assert.IsTrue(loop.ReachedEnd(10000 - 100));
+            Assert.IsFalse(loop.ReachedEnd(10000 - 101));
+
+            // Crossing B is handled by ShouldRestart instead, when B is short of the audio's end.
+            loop.SetRange(2000, 9500);
+            Assert.IsFalse(loop.ReachedEnd(10000));
+            Observe(loop, 9400);
+            Assert.IsTrue(loop.ShouldRestart(9600, true));
+        }
+
+        [Test]
         public void MoveFromNeverCrossesTo()
         {
             loop.SetRange(2000, 5000);

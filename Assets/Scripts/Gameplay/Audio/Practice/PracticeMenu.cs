@@ -163,9 +163,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void CheckRepeat(int chartTiming)
         {
             int timing = Services.Audio.AudioTiming;
-            int length = Services.Audio.AudioLength;
-            bool audioEnd = timing >= length - 100 && loop.To >= length - 100;
-            if (loop.ShouldRestart(timing, Services.Audio.IsPlaying) || (audioEnd && !gameObject.activeInHierarchy))
+            if (loop.ShouldRestart(timing, Services.Audio.IsPlaying) || (loop.ReachedEnd(timing) && !gameObject.activeInHierarchy))
             {
                 Restart();
             }

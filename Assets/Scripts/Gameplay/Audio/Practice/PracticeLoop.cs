@@ -15,6 +15,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
         /// </summary>
         public const int FallbackLeadInMs = 2000;
 
+        /// <summary>
+        /// How close to the end of the song counts as "at the end" for <see cref="ReachedEnd"/>.
+        /// </summary>
+        public const int EndToleranceMs = 100;
+
         private int? lastTiming;
 
         public int AudioLength { get; private set; }
@@ -118,6 +123,16 @@ namespace ArcCreate.Gameplay.Audio.Practice
             lastTiming = timing;
             return crossedEnd;
         }
+
+        /// <summary>
+        /// Whether the loop should restart because it reached the end of the song. A loop whose
+        /// <see cref="To"/> is the end of the song never crosses it through <see cref="ShouldRestart"/>,
+        /// because audio stops there, so this covers that case instead. The caller decides whether
+        /// playback is actually running (for example, whether the pause menu is hidden), since
+        /// <c>IsPlaying</c> is already false once the clip ends.
+        /// </summary>
+        public bool ReachedEnd(int timing) =>
+            Enabled && To >= AudioLength - EndToleranceMs && timing >= AudioLength - EndToleranceMs;
 
         private static int Clamp(int value, int min, int max)
         {
