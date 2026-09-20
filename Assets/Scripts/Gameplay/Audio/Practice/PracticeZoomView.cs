@@ -49,6 +49,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private int readoutTo = int.MinValue;
         private bool readoutEnabled;
         private int zoomLabelBars = -1;
+        private BeatGrid scaleGrid;
+        private double scaleBarMs;
 
         /// <summary>
         /// Audio timing under a screen position on the time axis, clamped to the visible window.
@@ -115,20 +117,29 @@ namespace ArcCreate.Gameplay.Audio.Practice
             int playheadTiming = Services.Audio.AudioTiming;
             BeatGrid grid = menu.Grid;
 
-            double barMs = grid.BarLengthAt(playheadTiming - offset);
-            if (barMs <= 0)
-            {
-                barMs = FallbackBarMs;
-            }
-
             window.SetBounds(0, Services.Audio.AudioLength);
-            window.CenterOn(playheadTiming, (int)Math.Round(barMs * bars));
+            window.CenterOn(playheadTiming, (int)Math.Round(ScaleBarMs(grid, offset) * bars));
 
             chartStrip.SetWindow(window.From - offset, window.To - offset, grid);
             UpdateWaveform(clip);
             PlaceMarker(playhead, playheadTiming, true);
             UpdateLoop(grid, offset);
             UpdateZoomIndicator();
+        }
+
+        /// <summary>
+        /// Length of one bar of zoom. It is the chart's typical bar rather than the bar at the playhead, so the
+        /// window keeps its size through short tempo changes and "N bars" means the same time across the song.
+        /// </summary>
+        private double ScaleBarMs(BeatGrid grid, int offset)
+        {
+            if (grid != scaleGrid)
+            {
+                scaleGrid = grid;
+                scaleBarMs = grid.TypicalBarLength(-offset, Services.Audio.AudioLength - offset);
+            }
+
+            return scaleBarMs > 0 ? scaleBarMs : FallbackBarMs;
         }
 
         /// <summary>
