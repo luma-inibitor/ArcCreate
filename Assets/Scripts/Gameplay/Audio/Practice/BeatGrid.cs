@@ -10,6 +10,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
     /// </summary>
     public class BeatGrid
     {
+        /// <summary>
+        /// Snapped timings are whole milliseconds, so a timing this close to a line counts as on it.
+        /// </summary>
+        private const double OnLineToleranceMs = 0.5;
+
         private readonly List<TimingEvent> timings;
 
         public BeatGrid(IEnumerable<TimingEvent> timings)
@@ -22,6 +27,13 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             Bar,
             Beat,
+        }
+
+        public enum Rounding
+        {
+            Nearest,
+            Down,
+            Up,
         }
 
         public bool IsEmpty => timings.Count == 0;
@@ -53,9 +65,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
         }
 
         /// <summary>
-        /// Snap a timing to the nearest bar line.
+        /// Snap a timing to a bar line, the nearest one by default.
         /// </summary>
-        public int SnapToBar(int timing) => Snap(timing, Unit.Bar);
+        public int SnapToBar(int timing, Rounding rounding = Rounding.Nearest) => Snap(timing, Unit.Bar, rounding);
 
         /// <summary>
         /// Snap a timing to the nearest beat.
@@ -63,10 +75,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
         public int SnapToBeat(int timing) => Snap(timing, Unit.Beat);
 
         /// <summary>
-        /// Snap a timing to the nearest bar line or beat. Returns the timing unchanged if the grid
-        /// has no usable tempo at that point. Every timing event starts a new bar.
+        /// Snap a timing to a bar line or beat: the nearest one, the one at or before it, or the one at or after it.
+        /// Returns the timing unchanged if the grid has no usable tempo at that point. Every timing event starts a new bar.
         /// </summary>
-        public int Snap(int timing, Unit unit)
+        public int Snap(int timing, Unit unit, Rounding rounding = Rounding.Nearest)
         {
             if (IsEmpty)
             {
@@ -84,11 +96,24 @@ namespace ArcCreate.Gameplay.Audio.Practice
             double segmentStart = ev.Timing;
             double segmentEnd = index + 1 < timings.Count ? timings[index + 1].Timing : double.PositiveInfinity;
 
-            // Nearest of the line at or below the timing and the line above it. The next timing
+            // Choose between the line at or below the timing and the line above it. The next timing
             // event always starts a new bar, so the line above is capped there.
-            double lower = segmentStart + (Math.Floor((timing - segmentStart) / step) * step);
+            double lower = segmentStart + (Math.Floor((timing - segmentStart + OnLineToleranceMs) / step) * step);
             double upper = Math.Min(lower + step, segmentEnd);
-            double candidate = timing - lower < upper - timing ? lower : upper;
+            double candidate;
+            switch (rounding)
+            {
+                case Rounding.Down:
+                    candidate = lower;
+                    break;
+                case Rounding.Up:
+                    candidate = timing - lower <= OnLineToleranceMs ? lower : upper;
+                    break;
+                default:
+                    candidate = timing - lower < upper - timing ? lower : upper;
+                    break;
+            }
+
             return (int)Math.Round(candidate);
         }
 
@@ -114,7 +139,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 {
                     if (bar > 0 && timing >= ev.Timing)
                     {
-                        bars += (int)Math.Floor((timing - ev.Timing) / bar);
+                        bars += (int)Math.Floor((timing - ev.Timing + OnLineToleranceMs) / bar);
                     }
 
                     return bars;

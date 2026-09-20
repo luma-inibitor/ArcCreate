@@ -39,6 +39,43 @@ namespace Tests.Unit
             Assert.AreEqual(expected, TwoTempos().SnapToBar(timing));
         }
 
+        [TestCase(1100, BeatGrid.Rounding.Down, 0)]
+        [TestCase(1100, BeatGrid.Rounding.Up, 2000)]
+        [TestCase(2000, BeatGrid.Rounding.Down, 2000)]
+        [TestCase(2000, BeatGrid.Rounding.Up, 2000)]
+        [TestCase(1999, BeatGrid.Rounding.Down, 0)]
+        [TestCase(2001, BeatGrid.Rounding.Up, 4000)]
+        [TestCase(7900, BeatGrid.Rounding.Up, 8000)]
+        [TestCase(7999, BeatGrid.Rounding.Down, 6000)]
+        [TestCase(8500, BeatGrid.Rounding.Down, 8000)]
+        [TestCase(-100, BeatGrid.Rounding.Up, 0)]
+        public void SnapToBarDirected(int timing, BeatGrid.Rounding rounding, int expected)
+        {
+            Assert.AreEqual(expected, TwoTempos().SnapToBar(timing, rounding));
+        }
+
+        [Test]
+        public void SnapUpStopsAtNextTimingEvent()
+        {
+            BeatGrid grid = new BeatGrid(new List<TimingEvent> { Ev(0, 120, 4), Ev(1500, 120, 4) });
+            Assert.AreEqual(1500, grid.SnapToBar(100, BeatGrid.Rounding.Up));
+            Assert.AreEqual(0, grid.SnapToBar(1400, BeatGrid.Rounding.Down));
+        }
+
+        [Test]
+        public void FractionalBarLinesRoundTrip()
+        {
+            // 90 bpm 4/4: bar lines at 0, 2666.67, 5333.33, 8000. Snapping stores whole ms,
+            // so a line can land just below its true position and must still count as on it.
+            BeatGrid grid = new BeatGrid(new List<TimingEvent> { Ev(0, 90, 4) });
+            int bar2 = grid.SnapToBar(5300);
+            Assert.AreEqual(5333, bar2);
+            Assert.AreEqual(2, grid.BarIndexAt(bar2));
+            Assert.AreEqual(bar2, grid.SnapToBar(bar2, BeatGrid.Rounding.Down));
+            Assert.AreEqual(bar2, grid.SnapToBar(bar2, BeatGrid.Rounding.Up));
+            Assert.AreEqual(1, grid.BarIndexAt(grid.SnapToBar(2700)));
+        }
+
         [TestCase(600, 500)]
         [TestCase(8120, 8000)]
         [TestCase(8130, 8250)]
