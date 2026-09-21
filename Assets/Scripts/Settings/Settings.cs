@@ -92,9 +92,17 @@ namespace ArcCreate
         {
             if (Application.isMobilePlatform)
             {
-                Application.targetFrameRate = 60;
-                LimitFrameRate.OnValueChanged.AddListener((value) => QualitySettings.vSyncCount = value ? 0 : 1);
-                QualitySettings.vSyncCount = LimitFrameRate.Value ? 0 : 1;
+                // Some Android skins report a 60 Hz display to apps they do not classify as games, even
+                // on a 120 Hz panel, so neither the reported refresh rate nor vSync can be trusted to
+                // reach the panel's rate. Ask for 120 outright; the compositor caps it to the panel.
+                int maxRefreshRate = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
+#if UNITY_ANDROID
+                maxRefreshRate = Mathf.Max(maxRefreshRate, Screen.resolutions.Max(res => Mathf.RoundToInt((float)res.refreshRateRatio.value)));
+#endif
+                maxRefreshRate = Mathf.Max(maxRefreshRate, 120);
+                LimitFrameRate.OnValueChanged.AddListener((value) => Application.targetFrameRate = value ? 60 : maxRefreshRate);
+                Application.targetFrameRate = LimitFrameRate.Value ? 60 : maxRefreshRate;
+                QualitySettings.vSyncCount = 0;
             }
             else
             {
