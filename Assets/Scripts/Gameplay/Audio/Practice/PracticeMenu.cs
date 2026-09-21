@@ -137,7 +137,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             loop.Enabled = true;
             loop.ResetTracking();
-            loop.ResetLoopCount();
             repeatOff.SetActive(false);
             repeatOn.SetActive(true);
             UpdateRepeatRange();
@@ -212,7 +211,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void Restart()
         {
-            loop.CountRestart();
             Services.Audio.Pause();
             Services.Audio.PlayWithDelay(loop.From, RestartDelay());
         }

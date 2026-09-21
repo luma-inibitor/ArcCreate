@@ -1018,9 +1018,6 @@ Gameplay:
       TwoBars: 2 bars
       TwoSeconds: 2 s
     Hud:
-      Speed: "{speed}x"
-      Loop: "loop {count}"
-      Range: "A {from} – B {to}"
       CountIn: "bar {bar} in {beats}"
   Selection:
     SelectStatus:

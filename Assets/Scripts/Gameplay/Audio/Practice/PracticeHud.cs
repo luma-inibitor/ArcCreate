@@ -7,21 +7,13 @@ using UnityEngine.UI;
 namespace ArcCreate.Gameplay.Audio.Practice
 {
     /// <summary>
-    /// The practice strip on the unpaused HUD: playback speed, loop count and A-B bars next to the pause
-    /// button with jump buttons, a count-in during the lead-in, and the loop range on the progress bar.
-    /// Active only in practice mode.
+    /// Practice controls on the unpaused HUD: jump buttons next to the pause button, a count-in during
+    /// the lead-in, and the loop range on the progress bar. Active only in practice mode.
     /// </summary>
     public class PracticeHud : MonoBehaviour
     {
         [SerializeField] private GameplayData gameplayData;
         [SerializeField] private PracticeMenu practiceMenu;
-        [SerializeField] private PauseButton pauseButton;
-        [SerializeField] private Button stripButton;
-
-        [Header("Strip")]
-        [SerializeField] private TMP_Text speedText;
-        [SerializeField] private TMP_Text loopText;
-        [SerializeField] private TMP_Text rangeText;
         [SerializeField] private TMP_Text countInText;
 
         [Header("Jumps")]
@@ -34,8 +26,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [Header("Elsewhere on the HUD")]
         [SerializeField] private RectTransform progressMarker;
 
-        private float shownSpeed = -1;
-        private int shownLoops = -1;
         private int shownFrom = -1;
         private int shownTo = -1;
         private bool shownEnabled;
@@ -43,7 +33,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void Awake()
         {
-            stripButton.onClick.AddListener(OpenPause);
             toStartButton.onClick.AddListener(JumpToStart);
             backButton.onClick.AddListener(JumpBack);
             forwardButton.onClick.AddListener(JumpForward);
@@ -52,7 +41,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void OnDestroy()
         {
-            stripButton.onClick.RemoveListener(OpenPause);
             toStartButton.onClick.RemoveListener(JumpToStart);
             backButton.onClick.RemoveListener(JumpBack);
             forwardButton.onClick.RemoveListener(JumpForward);
@@ -68,11 +56,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void OnDisable()
         {
             gameplayData.OnGameplayUpdate -= OnGameplayUpdate;
-        }
-
-        private void OpenPause()
-        {
-            pauseButton.Activate();
         }
 
         private void JumpToStart()
@@ -119,8 +102,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void Invalidate()
         {
-            shownSpeed = -1;
-            shownLoops = -1;
             shownFrom = -1;
             shownTo = -1;
             shownCountIn = -1;
@@ -133,35 +114,10 @@ namespace ArcCreate.Gameplay.Audio.Practice
             int offset = Services.Audio.FullOffset;
             float speed = gameplayData.PlaybackSpeed.Value;
 
-            if (!Mathf.Approximately(speed, shownSpeed))
-            {
-                shownSpeed = speed;
-                speedText.text = I18n.S("Gameplay.Practice.Hud.Speed", new Dictionary<string, object>()
-                {
-                    { "speed", speed.ToString("f2") },
-                });
-            }
-
-            if (loop.Enabled != shownEnabled || loop.LoopCount != shownLoops)
-            {
-                shownLoops = loop.LoopCount;
-                SetChip(loopText, loop.Enabled
-                    ? I18n.S("Gameplay.Practice.Hud.Loop", new Dictionary<string, object>() { { "count", loop.LoopCount } })
-                    : string.Empty);
-            }
-
             if (loop.Enabled != shownEnabled || loop.From != shownFrom || loop.To != shownTo)
             {
                 shownFrom = loop.From;
                 shownTo = loop.To;
-                SetChip(rangeText, loop.Enabled
-                    ? I18n.S("Gameplay.Practice.Hud.Range", new Dictionary<string, object>()
-                    {
-                        { "from", grid.BarIndexAt(loop.From - offset) + 1 },
-                        { "to", grid.BarIndexAt(loop.To - offset) + 1 },
-                    })
-                    : string.Empty);
-
                 if (progressMarker != null)
                 {
                     progressMarker.gameObject.SetActive(loop.Enabled && loop.AudioLength > 0);
@@ -175,15 +131,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             shownEnabled = loop.Enabled;
             UpdateCountIn(loop, grid, offset, speed);
-        }
-
-        /// <summary>
-        /// A chip is its text's parent; an empty chip is hidden rather than left as a dark box.
-        /// </summary>
-        private static void SetChip(TMP_Text text, string value)
-        {
-            text.text = value;
-            text.transform.parent.gameObject.SetActive(!string.IsNullOrEmpty(value));
         }
 
         /// <summary>

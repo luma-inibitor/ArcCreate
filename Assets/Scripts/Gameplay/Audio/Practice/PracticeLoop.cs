@@ -54,15 +54,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         public int LengthMs => To - From;
 
         /// <summary>
-        /// Gets how many times the loop restarted since its range was last set.
-        /// </summary>
-        public int LoopCount { get; private set; }
-
-        public void CountRestart() => LoopCount++;
-
-        public void ResetLoopCount() => LoopCount = 0;
-
-        /// <summary>
         /// Set the audio length. Resets the range to the whole audio.
         /// </summary>
         public void SetAudioLength(int lengthMs)
@@ -92,7 +83,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
             From = from;
             To = to;
-            LoopCount = 0;
             ResetTracking();
         }
 
