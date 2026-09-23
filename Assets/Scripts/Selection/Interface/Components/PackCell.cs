@@ -48,15 +48,12 @@ namespace ArcCreate.Selection.Interface
         private void FitCover()
         {
             Texture texture = image.texture;
-            if (texture == null || texture.height == 0)
-            {
-                image.uvRect = new Rect(0, 0, 1, 1);
-                return;
-            }
-
             Rect rect = image.rectTransform.rect;
-            if (rect.height <= 0)
+            if (texture == null || texture.height == 0 || rect.width <= 0 || rect.height <= 0)
             {
+                // No texture, or the cell has not been laid out yet: OnRectTransformDimensionsChange
+                // refits it once it has a size.
+                image.uvRect = new Rect(0, 0, 1, 1);
                 return;
             }
 
@@ -77,6 +74,14 @@ namespace ArcCreate.Selection.Interface
         private void Awake()
         {
             button.onClick.AddListener(SelectSelf);
+        }
+
+        private void OnRectTransformDimensionsChange()
+        {
+            if (image != null && image.texture != null)
+            {
+                FitCover();
+            }
         }
 
         private void OnDestroy()
