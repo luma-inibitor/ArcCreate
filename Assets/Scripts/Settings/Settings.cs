@@ -92,8 +92,6 @@ namespace ArcCreate
         {
             if (Application.isMobilePlatform)
             {
-                AndroidGameCategory.Apply();
-
                 // Some Android skins report a 60 Hz display to apps they do not classify as games, even
                 // on a 120 Hz panel, so neither the reported refresh rate nor vSync can be trusted to
                 // reach the panel's rate. Ask for 120 outright; the compositor caps it to the panel.

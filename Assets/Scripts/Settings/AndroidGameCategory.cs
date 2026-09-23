@@ -14,7 +14,8 @@ namespace ArcCreate
     {
         private const int CategoryGame = 0; // android.content.pm.ApplicationInfo.CATEGORY_GAME
 
-        public static void Apply()
+        [RuntimeInitializeOnLoadMethod]
+        private static void Apply()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
