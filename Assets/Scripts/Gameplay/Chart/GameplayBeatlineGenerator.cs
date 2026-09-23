@@ -24,7 +24,7 @@ namespace ArcCreate.Gameplay.Chart
 
                 float start = -3000 - Values.ChartAudioOffset - Settings.GlobalAudioOffset.Value;
 
-                if (firstTiming.Bpm <= 10000)
+                if (firstTiming.Bpm <= Values.MaxBeatlineBpm)
                 {
                     double distanceBetweenTwoLine =
                         firstTiming.Bpm * firstTiming.Divisor == 0 ?
@@ -57,7 +57,7 @@ namespace ArcCreate.Gameplay.Chart
                 TimingEvent currentTiming = timings[i];
                 int limit = timings[i + 1].Timing;
 
-                if (currentTiming.Bpm > 10000)
+                if (currentTiming.Bpm > Values.MaxBeatlineBpm)
                 {
                     continue;
                 }
@@ -94,7 +94,7 @@ namespace ArcCreate.Gameplay.Chart
                 TimingEvent lastTiming = timings[timings.Count - 1];
                 int limit = audioLength;
 
-                if (lastTiming.Bpm <= 10000)
+                if (lastTiming.Bpm <= Values.MaxBeatlineBpm)
                 {
                     double distanceBetweenTwoLine =
                         lastTiming.Bpm * lastTiming.Divisor == 0 ?
