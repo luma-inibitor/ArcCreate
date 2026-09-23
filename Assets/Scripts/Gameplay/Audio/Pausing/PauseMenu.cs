@@ -19,12 +19,25 @@ namespace ArcCreate.Gameplay.Audio
         [SerializeField] private Button[] retryButtons;
         [SerializeField] private Button[] returnButtons;
         [SerializeField] private PracticeMenu practiceMenu;
-        [SerializeField] private PracticeTimingControl practiceTimingControl;
+        [SerializeField] private GameObject practiceHud;
         [SerializeField] private GameObject pauseControl;
         [SerializeField] private GameObject normalLayout;
         [SerializeField] private GameObject reversedLayout;
         [SerializeField] private GameObject promptAudioConfigChange;
         private TransitionSequence retryTransition;
+
+        /// <summary>
+        /// Hide the pause screen and start playback at an audio timing after a delay, like Resume does
+        /// at the current timing. Used by the practice loop's restart button.
+        /// </summary>
+        public void ResumeAt(int audioTiming, int delayMs)
+        {
+            pauseScreen.SetActive(false);
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(audioTiming, delayMs);
+            Services.Judgement.RefreshInputHandler();
+            DisablePauseButton().Forget();
+        }
 
         private void Awake()
         {
@@ -47,6 +60,7 @@ namespace ArcCreate.Gameplay.Audio
             Application.focusChanged += OnFocusChange;
             gameplayData.EnablePracticeMode.OnValueChange += SetPracticeMode;
             SetPracticeMode(gameplayData.EnablePracticeMode.Value);
+            gameplayData.AudioClip.OnValueChange += OnClipChange;
 
             Settings.SwitchResumeAndRetryPosition.OnValueChanged.AddListener(OnSwitchLayoutSettings);
             OnSwitchLayoutSettings(Settings.SwitchResumeAndRetryPosition.Value);
@@ -92,6 +106,7 @@ namespace ArcCreate.Gameplay.Audio
 
             Application.focusChanged -= OnFocusChange;
             gameplayData.EnablePracticeMode.OnValueChange -= SetPracticeMode;
+            gameplayData.AudioClip.OnValueChange -= OnClipChange;
 
             if (Application.platform == RuntimePlatform.IPhonePlayer
              || Application.platform == RuntimePlatform.Android)
@@ -186,8 +201,26 @@ namespace ArcCreate.Gameplay.Audio
         private void SetPracticeMode(bool enable)
         {
             practiceMenu.gameObject.SetActive(enable);
-            practiceTimingControl.gameObject.SetActive(enable);
+            practiceHud.SetActive(enable);
             pauseControl.SetActive(!enable);
+            PrepareWaveform();
+        }
+
+        private void OnClipChange(AudioClip clip)
+        {
+            PrepareWaveform();
+        }
+
+        /// <summary>
+        /// The practice menu is inactive until the first pause, so it cannot build its waveform
+        /// texture itself at load time. Doing it here hides the cost behind the scene transition.
+        /// </summary>
+        private void PrepareWaveform()
+        {
+            if (gameplayData.EnablePracticeMode.Value && gameplayData.AudioClip.Value != null)
+            {
+                practiceMenu.PrepareWaveform(gameplayData.AudioClip.Value);
+            }
         }
     }
 }

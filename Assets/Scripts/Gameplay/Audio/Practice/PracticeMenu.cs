@@ -8,6 +8,8 @@ namespace ArcCreate.Gameplay.Audio.Practice
     {
         [SerializeField] private GameplayData gameplayData;
         [SerializeField] private PracticeTimeline timeline;
+        [SerializeField] private PauseMenu pauseMenu;
+        [SerializeField] private Button restartLoopButton;
 
         [Header("Speed")]
         [SerializeField] private SpeedSlider speedSlider;
@@ -20,9 +22,70 @@ namespace ArcCreate.Gameplay.Audio.Practice
         [SerializeField] private Button repeatOnButton;
         [SerializeField] private Button repeatFromButton;
         [SerializeField] private Button repeatToButton;
-        private int repeatToTiming;
-        private int repeatFromTiming;
-        private bool repeat;
+
+        [Header("Lead-in")]
+        [Tooltip("One per PracticeLoop.LeadInMode, in enum order.")]
+        [SerializeField] private Button[] leadInButtons;
+        [SerializeField] private Color leadInColor = new Color(0, 0, 0, 0.3f);
+        [SerializeField] private Color leadInSelectedColor = new Color(0.3882353f, 0.7176471f, 0.81960785f, 0.78431374f);
+
+        private readonly PracticeLoop loop = new PracticeLoop();
+        private BeatGrid grid;
+
+        public PracticeLoop Loop => loop;
+
+        /// <summary>
+        /// Gets the bar and beat grid of timing group 0, rebuilt after chart or timing edits.
+        /// </summary>
+        public BeatGrid Grid
+        {
+            get
+            {
+                if (grid == null)
+                {
+                    grid = new BeatGrid(Services.Chart.GetTimingGroup(0).Timings);
+                }
+
+                return grid;
+            }
+        }
+
+        /// <summary>
+        /// Build the waveform texture ahead of the first pause. Safe to call while inactive.
+        /// </summary>
+        public void PrepareWaveform(AudioClip clip)
+        {
+            timeline.LoadWaveformFor(clip);
+        }
+
+        /// <summary>
+        /// Move one loop edge to an audio timing, snapped to the nearest bar. The edge never crosses the other one.
+        /// </summary>
+        public void DragLoopEdge(bool from, int audioTiming)
+        {
+            int snapped = SnapToBar(audioTiming);
+            if (from)
+            {
+                loop.MoveFrom(snapped);
+            }
+            else
+            {
+                loop.MoveTo(snapped);
+            }
+
+            UpdateRepeatRange();
+        }
+
+        /// <summary>
+        /// Jump back to A with the lead-in while playing, for the HUD's skip-to-start button.
+        /// </summary>
+        public void JumpToLoopStart()
+        {
+            loop.ResetTracking();
+            Restart();
+        }
+
+        private static string FormatSpeed(float speed) => speed.ToString("f2") + "x";
 
         private void Awake()
         {
@@ -32,17 +95,36 @@ namespace ArcCreate.Gameplay.Audio.Practice
                 OnClipChange(gameplayData.AudioClip.Value);
             }
 
+            gameplayData.OnChartTimingEdit += InvalidateGrid;
+            gameplayData.OnChartEdit += InvalidateGrid;
             speedSlider.OnValueChanged += OnSpeedChange;
+            speedText.text = FormatSpeed(speedSlider.Value);
             repeatOffButton.onClick.AddListener(TurnRepeatOff);
             repeatOnButton.onClick.AddListener(TurnRepeatOn);
             repeatFromButton.onClick.AddListener(SetRepeatFrom);
             repeatToButton.onClick.AddListener(SetRepeatTo);
+            restartLoopButton.onClick.AddListener(RestartFromPause);
+            for (int i = 0; i < leadInButtons.Length; i++)
+            {
+                PracticeLoop.LeadInMode mode = (PracticeLoop.LeadInMode)i;
+                leadInButtons[i].onClick.AddListener(() => SetLeadIn(mode));
+            }
+
+            UpdateLeadInButtons();
         }
 
         private void OnDestroy()
         {
+            restartLoopButton.onClick.RemoveListener(RestartFromPause);
+            foreach (Button button in leadInButtons)
+            {
+                button.onClick.RemoveAllListeners();
+            }
+
             gameplayData.AudioClip.OnValueChange -= OnClipChange;
             gameplayData.OnGameplayUpdate -= CheckRepeat;
+            gameplayData.OnChartTimingEdit -= InvalidateGrid;
+            gameplayData.OnChartEdit -= InvalidateGrid;
             speedSlider.OnValueChanged -= OnSpeedChange;
             repeatOffButton.onClick.RemoveListener(TurnRepeatOff);
             repeatOnButton.onClick.RemoveListener(TurnRepeatOn);
@@ -50,23 +132,33 @@ namespace ArcCreate.Gameplay.Audio.Practice
             repeatToButton.onClick.RemoveListener(SetRepeatTo);
         }
 
+        private void InvalidateGrid()
+        {
+            grid = null;
+        }
+
         private void OnClipChange(AudioClip clip)
         {
+            if (clip == null)
+            {
+                return;
+            }
+
             timeline.LoadWaveformFor(clip);
-            repeatFromTiming = 0;
-            repeatToTiming = Mathf.RoundToInt(clip.length * 1000);
+            loop.SetAudioLength(Mathf.RoundToInt(clip.length * 1000));
+            InvalidateGrid();
             UpdateRepeatRange();
         }
 
         private void OnSpeedChange(float speed)
         {
-            speedText.text = speed.ToString("f2") + "x";
+            speedText.text = FormatSpeed(speed);
             gameplayData.PlaybackSpeed.Value = speed;
         }
 
         private void TurnRepeatOff()
         {
-            repeat = false;
+            loop.Enabled = false;
             repeatOff.SetActive(true);
             repeatOn.SetActive(false);
             UpdateRepeatRange();
@@ -75,48 +167,81 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void TurnRepeatOn()
         {
-            repeat = true;
+            loop.Enabled = true;
+            loop.ResetTracking();
             repeatOff.SetActive(false);
             repeatOn.SetActive(true);
             UpdateRepeatRange();
+            gameplayData.OnGameplayUpdate -= CheckRepeat;
             gameplayData.OnGameplayUpdate += CheckRepeat;
         }
 
         private void SetRepeatFrom()
         {
-            repeatFromTiming = Services.Audio.AudioTiming;
+            loop.SetFrom(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Down));
             UpdateRepeatRange();
         }
 
         private void SetRepeatTo()
         {
-            repeatToTiming = Services.Audio.AudioTiming;
+            loop.SetTo(SnapToBar(Services.Audio.AudioTiming, BeatGrid.Rounding.Up));
             UpdateRepeatRange();
+        }
+
+        private void SetLeadIn(PracticeLoop.LeadInMode mode)
+        {
+            loop.LeadIn = mode;
+            UpdateLeadInButtons();
+        }
+
+        private void UpdateLeadInButtons()
+        {
+            for (int i = 0; i < leadInButtons.Length; i++)
+            {
+                bool selected = (PracticeLoop.LeadInMode)i == loop.LeadIn;
+                leadInButtons[i].image.color = selected ? leadInSelectedColor : leadInColor;
+            }
+        }
+
+        private int SnapToBar(int audioTiming, BeatGrid.Rounding rounding = BeatGrid.Rounding.Nearest)
+        {
+            int offset = Services.Audio.FullOffset;
+            return Grid.SnapToBar(audioTiming - offset, rounding) + offset;
         }
 
         private void UpdateRepeatRange()
         {
-            if (repeatFromTiming > repeatToTiming)
-            {
-                (repeatFromTiming, repeatToTiming) = (repeatToTiming, repeatFromTiming);
-            }
-
-            repeatToTiming = Mathf.Clamp(repeatToTiming, repeatFromTiming + 1000, Services.Audio.AudioLength);
-            repeatFromTiming = Mathf.Clamp(repeatFromTiming, 0, repeatToTiming - 1000);
-            timeline.SetRepeatRange(repeat, repeatFromTiming, repeatToTiming);
+            timeline.SetRepeatRange(loop.Enabled, loop.From, loop.To);
         }
 
         private void CheckRepeat(int chartTiming)
         {
             int timing = Services.Audio.AudioTiming;
-            int length = Services.Audio.AudioLength;
-            bool outsideRange = timing < repeatFromTiming - 200 * gameplayData.PlaybackSpeed.Value || timing > repeatToTiming;
-            bool audioEnd = timing >= length - 100 && repeatToTiming >= length - 100;
-            if ((Services.Audio.IsPlaying && outsideRange) || (audioEnd && !gameObject.activeInHierarchy))
+            if (loop.ShouldRestart(timing, Services.Audio.IsPlaying) || (loop.ReachedEnd(timing) && !gameObject.activeInHierarchy))
             {
-                Services.Audio.Pause();
-                Services.Audio.PlayWithDelay(repeatFromTiming, 200);
+                Restart();
             }
+        }
+
+        private void Restart()
+        {
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(loop.From, RestartDelay());
+        }
+
+        /// <summary>
+        /// The "Restart loop" button: leave the pause screen and play from A with the lead-in.
+        /// </summary>
+        private void RestartFromPause()
+        {
+            loop.ResetTracking();
+            pauseMenu.ResumeAt(loop.From, RestartDelay());
+        }
+
+        private int RestartDelay()
+        {
+            double barLength = Grid.BarLengthAt(loop.From - Services.Audio.FullOffset);
+            return loop.RestartDelayMs(barLength, gameplayData.PlaybackSpeed.Value);
         }
     }
 }

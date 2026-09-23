@@ -1007,6 +1007,18 @@ Gameplay:
       Off: Repeat Off
       From: Set starting point
       To: Set ending point 
+    ZoomSeconds: "{seconds} s"
+    LoopReadout: "A {from}   →   B {to}      {seconds} s"
+    Loop: Loop
+    RestartLoop: Restart loop
+    LeadIn:
+      Title: Lead-in
+      None: "0"
+      OneBar: 1 bar
+      TwoBars: 2 bars
+      TwoSeconds: 2 s
+    Hud:
+      CountIn: "bar {bar} in {beats}"
   Selection:
     SelectStatus:
       Singular: |-
