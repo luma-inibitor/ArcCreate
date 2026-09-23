@@ -87,6 +87,11 @@ namespace ArcCreate
         public static readonly BoolSetting EnableArctapWidthEditing = new BoolSetting("Editor.Secret.ArctapWidth", false);
         public static readonly BoolSetting SnapFloorNoteWithGrid = new BoolSetting("Editor.Secret.SnapFloorNoteWithGrid", false);
 
+        /// <summary>
+        /// Refresh rate a mobile device is assumed to reach when it reports a lower one, in Hz.
+        /// </summary>
+        private const int AssumedMaxRefreshRate = 120;
+
         [RuntimeInitializeOnLoadMethod]
         public static void OnInitialize()
         {
@@ -94,12 +99,13 @@ namespace ArcCreate
             {
                 // Some Android skins report a 60 Hz display to apps they do not classify as games, even
                 // on a 120 Hz panel, so neither the reported refresh rate nor vSync can be trusted to
-                // reach the panel's rate. Ask for 120 outright; the compositor caps it to the panel.
+                // reach the panel's rate. Ask for at least AssumedMaxRefreshRate; the compositor caps
+                // the rate to what the panel can do.
                 int maxRefreshRate = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
 #if UNITY_ANDROID
                 maxRefreshRate = Mathf.Max(maxRefreshRate, Screen.resolutions.Max(res => Mathf.RoundToInt((float)res.refreshRateRatio.value)));
 #endif
-                maxRefreshRate = Mathf.Max(maxRefreshRate, 120);
+                maxRefreshRate = Mathf.Max(maxRefreshRate, AssumedMaxRefreshRate);
                 LimitFrameRate.OnValueChanged.AddListener((value) => Application.targetFrameRate = value ? 60 : maxRefreshRate);
                 Application.targetFrameRate = LimitFrameRate.Value ? 60 : maxRefreshRate;
                 QualitySettings.vSyncCount = 0;
