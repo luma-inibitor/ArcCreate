@@ -62,6 +62,12 @@ namespace ArcCreate.Gameplay.Score
 
         public void ProcessJudgement(int timingGroup, JudgementResult result, Option<int> offset)
         {
+            if (Settings.ShowGameplayDebug.Value)
+            {
+                // One line per judgement, for reading play results back over logcat.
+                Debug.Log($"[Judge] t={Services.Audio.ChartTiming} g={timingGroup} r={result} d={(offset.HasValue ? offset.Value.ToString() : "-")}");
+            }
+
             resultReceivedThisFrame.Add((timingGroup, result));
             SetJudgementCount(result, GetJudgementCount(result) + 1);
 
