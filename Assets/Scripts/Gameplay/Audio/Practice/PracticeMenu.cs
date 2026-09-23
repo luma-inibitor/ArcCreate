@@ -139,6 +139,11 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void OnClipChange(AudioClip clip)
         {
+            if (clip == null)
+            {
+                return;
+            }
+
             timeline.LoadWaveformFor(clip);
             loop.SetAudioLength(Mathf.RoundToInt(clip.length * 1000));
             InvalidateGrid();
