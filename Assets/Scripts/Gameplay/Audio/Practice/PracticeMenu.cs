@@ -58,6 +58,35 @@ namespace ArcCreate.Gameplay.Audio.Practice
             timeline.LoadWaveformFor(clip);
         }
 
+        /// <summary>
+        /// Move one loop edge to an audio timing, snapped to the nearest bar. The edge never crosses the other one.
+        /// </summary>
+        public void DragLoopEdge(bool from, int audioTiming)
+        {
+            int snapped = SnapToBar(audioTiming);
+            if (from)
+            {
+                loop.MoveFrom(snapped);
+            }
+            else
+            {
+                loop.MoveTo(snapped);
+            }
+
+            UpdateRepeatRange();
+        }
+
+        /// <summary>
+        /// Jump back to A with the lead-in while playing, for the HUD's skip-to-start button.
+        /// </summary>
+        public void JumpToLoopStart()
+        {
+            loop.ResetTracking();
+            Restart();
+        }
+
+        private static string FormatSpeed(float speed) => speed.ToString("f2") + "x";
+
         private void Awake()
         {
             gameplayData.AudioClip.OnValueChange += OnClipChange;
@@ -122,8 +151,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             gameplayData.PlaybackSpeed.Value = speed;
         }
 
-        private static string FormatSpeed(float speed) => speed.ToString("f2") + "x";
-
         private void TurnRepeatOff()
         {
             loop.Enabled = false;
@@ -171,24 +198,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             }
         }
 
-        /// <summary>
-        /// Move one loop edge to an audio timing, snapped to the nearest bar. The edge never crosses the other one.
-        /// </summary>
-        public void DragLoopEdge(bool from, int audioTiming)
-        {
-            int snapped = SnapToBar(audioTiming);
-            if (from)
-            {
-                loop.MoveFrom(snapped);
-            }
-            else
-            {
-                loop.MoveTo(snapped);
-            }
-
-            UpdateRepeatRange();
-        }
-
         private int SnapToBar(int audioTiming, BeatGrid.Rounding rounding = BeatGrid.Rounding.Nearest)
         {
             int offset = Services.Audio.FullOffset;
@@ -213,15 +222,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             Services.Audio.Pause();
             Services.Audio.PlayWithDelay(loop.From, RestartDelay());
-        }
-
-        /// <summary>
-        /// Jump back to A with the lead-in while playing, for the HUD's skip-to-start button.
-        /// </summary>
-        public void JumpToLoopStart()
-        {
-            loop.ResetTracking();
-            Restart();
         }
 
         /// <summary>

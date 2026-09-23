@@ -129,6 +129,18 @@ namespace ArcCreate.Gameplay.Audio.Practice
             return group == null || group.GroupProperties.NoInput;
         }
 
+        private static Color ArcColor(int colorId)
+        {
+            if (Services.Skin == null)
+            {
+                return Color.white;
+            }
+
+            Color color = Services.Skin.GetArcColor(colorId).high;
+            color.a = 1;
+            return color;
+        }
+
         private void LayOut()
         {
             skyTopY = drawRect.yMax;
@@ -238,18 +250,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             float t = (timing - arc.Timing) / (float)duration;
             return new Vector2(XAt(timing), SkyY(ArcFormula.X(arc.XStart, arc.XEnd, t, arc.LineType)));
-        }
-
-        private static Color ArcColor(int colorId)
-        {
-            if (Services.Skin == null)
-            {
-                return Color.white;
-            }
-
-            Color color = Services.Skin.GetArcColor(colorId).high;
-            color.a = 1;
-            return color;
         }
 
         private float XAt(int timing)

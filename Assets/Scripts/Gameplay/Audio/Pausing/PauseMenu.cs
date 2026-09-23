@@ -26,6 +26,19 @@ namespace ArcCreate.Gameplay.Audio
         [SerializeField] private GameObject promptAudioConfigChange;
         private TransitionSequence retryTransition;
 
+        /// <summary>
+        /// Hide the pause screen and start playback at an audio timing after a delay, like Resume does
+        /// at the current timing. Used by the practice loop's restart button.
+        /// </summary>
+        public void ResumeAt(int audioTiming, int delayMs)
+        {
+            pauseScreen.SetActive(false);
+            Services.Audio.Pause();
+            Services.Audio.PlayWithDelay(audioTiming, delayMs);
+            Services.Judgement.RefreshInputHandler();
+            DisablePauseButton().Forget();
+        }
+
         private void Awake()
         {
             pauseButton.OnActivation.AddListener(OnPauseButton);
@@ -141,19 +154,6 @@ namespace ArcCreate.Gameplay.Audio
         {
             pauseScreen.SetActive(false);
             Services.Audio.ResumeWithDelay(Values.DelayBeforeAudioResume, false);
-            Services.Judgement.RefreshInputHandler();
-            DisablePauseButton().Forget();
-        }
-
-        /// <summary>
-        /// Hide the pause screen and start playback at an audio timing after a delay, like Resume does
-        /// at the current timing. Used by the practice loop's restart button.
-        /// </summary>
-        public void ResumeAt(int audioTiming, int delayMs)
-        {
-            pauseScreen.SetActive(false);
-            Services.Audio.Pause();
-            Services.Audio.PlayWithDelay(audioTiming, delayMs);
             Services.Judgement.RefreshInputHandler();
             DisablePauseButton().Forget();
         }

@@ -62,6 +62,20 @@ namespace ArcCreate.Gameplay.Audio.Practice
             return window.Denormalize(Mathf.InverseLerp(r.xMin, r.xMax, local.x));
         }
 
+        private static void SetActive(RectTransform rect, bool active)
+        {
+            if (rect.gameObject.activeSelf != active)
+            {
+                rect.gameObject.SetActive(active);
+            }
+        }
+
+        private static string FormatTime(int ms)
+        {
+            ms = Mathf.Max(0, ms);
+            return $"{ms / 60000}:{(ms % 60000) / 1000f:00.00}";
+        }
+
         private void Awake()
         {
             if (waveform != null && waveform.material != null)
@@ -254,20 +268,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
             span.anchorMax = new Vector2(b, span.anchorMax.y);
             span.offsetMin = new Vector2(0, span.offsetMin.y);
             span.offsetMax = new Vector2(0, span.offsetMax.y);
-        }
-
-        private static void SetActive(RectTransform rect, bool active)
-        {
-            if (rect.gameObject.activeSelf != active)
-            {
-                rect.gameObject.SetActive(active);
-            }
-        }
-
-        private static string FormatTime(int ms)
-        {
-            ms = Mathf.Max(0, ms);
-            return $"{ms / 60000}:{(ms % 60000) / 1000f:00.00}";
         }
 
         private void ZoomIn()

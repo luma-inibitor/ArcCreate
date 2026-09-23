@@ -35,6 +35,15 @@ namespace ArcCreate.Gameplay.Audio.Practice
             set { SetValue(value); }
         }
 
+        /// <summary>
+        /// Round a speed to the nearest step and keep it inside the range.
+        /// </summary>
+        public static float Snap(float speed)
+        {
+            float snapped = Mathf.Round(speed / Increment) * Increment;
+            return Mathf.Clamp(snapped, MinValue, MaxValue);
+        }
+
         public void SetValue(float value)
         {
             SetValueWithoutNotify(value);
@@ -45,15 +54,6 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             this.value = Snap(value);
             UpdateUI();
-        }
-
-        /// <summary>
-        /// Round a speed to the nearest step and keep it inside the range.
-        /// </summary>
-        public static float Snap(float speed)
-        {
-            float snapped = Mathf.Round(speed / Increment) * Increment;
-            return Mathf.Clamp(snapped, MinValue, MaxValue);
         }
 
         private void Awake()
