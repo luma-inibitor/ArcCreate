@@ -7,16 +7,6 @@ namespace Tests.Unit
 {
     public class BeatGridTest
     {
-        private static TimingEvent Ev(int timing, float bpm, float divisor)
-            => new TimingEvent { Timing = timing, Bpm = bpm, Divisor = divisor };
-
-        // 120 bpm 4/4 (bar 2000 ms) until 8000, then 240 bpm 4/4 (bar 1000 ms).
-        private static BeatGrid TwoTempos()
-            => new BeatGrid(new List<TimingEvent> { Ev(8000, 240, 4), Ev(0, 120, 4) });
-
-        private static List<(int timing, bool isBar)> Lines(BeatGrid grid, int from, int to)
-            => new List<(int timing, bool isBar)>(grid.LinesBetween(from, to));
-
         [Test]
         public void BarLength()
         {
@@ -272,5 +262,15 @@ namespace Tests.Unit
             CollectionAssert.IsEmpty(Lines(new BeatGrid(new List<TimingEvent> { Ev(0, 0, 4) }), 0, 5000));
             CollectionAssert.IsEmpty(Lines(TwoTempos(), 500, 100));
         }
+
+        private static TimingEvent Ev(int timing, float bpm, float divisor)
+            => new TimingEvent { Timing = timing, Bpm = bpm, Divisor = divisor };
+
+        // 120 bpm 4/4 (bar 2000 ms) until 8000, then 240 bpm 4/4 (bar 1000 ms).
+        private static BeatGrid TwoTempos()
+            => new BeatGrid(new List<TimingEvent> { Ev(8000, 240, 4), Ev(0, 120, 4) });
+
+        private static List<(int timing, bool isBar)> Lines(BeatGrid grid, int from, int to)
+            => new List<(int timing, bool isBar)>(grid.LinesBetween(from, to));
     }
 }

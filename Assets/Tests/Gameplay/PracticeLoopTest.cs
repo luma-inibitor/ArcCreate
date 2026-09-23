@@ -15,15 +15,6 @@ namespace Tests.Unit
             loop.SetAudioLength(10000);
         }
 
-        /// <summary>
-        /// An arrange-step call to <see cref="PracticeLoop.ShouldRestart"/> whose result is not asserted,
-        /// kept separate from the asserted steps for readability.
-        /// </summary>
-        private static void Observe(PracticeLoop loop, int timing, bool playing = true)
-        {
-            loop.ShouldRestart(timing, playing);
-        }
-
         [Test]
         public void AudioLengthResetsRangeToWholeAudio()
         {
@@ -262,6 +253,15 @@ namespace Tests.Unit
             Assert.AreEqual(2000 + PracticeLoop.MinLengthMs, loop.To);
             loop.MoveTo(20000);
             Assert.AreEqual(10000, loop.To);
+        }
+
+        /// <summary>
+        /// An arrange-step call to <see cref="PracticeLoop.ShouldRestart"/> whose result is not asserted,
+        /// kept separate from the asserted steps for readability.
+        /// </summary>
+        private static void Observe(PracticeLoop loop, int timing, bool playing = true)
+        {
+            loop.ShouldRestart(timing, playing);
         }
     }
 }
