@@ -47,6 +47,7 @@ namespace ArcCreate.Gameplay.Audio
             Application.focusChanged += OnFocusChange;
             gameplayData.EnablePracticeMode.OnValueChange += SetPracticeMode;
             SetPracticeMode(gameplayData.EnablePracticeMode.Value);
+            gameplayData.AudioClip.OnValueChange += OnClipChange;
 
             Settings.SwitchResumeAndRetryPosition.OnValueChanged.AddListener(OnSwitchLayoutSettings);
             OnSwitchLayoutSettings(Settings.SwitchResumeAndRetryPosition.Value);
@@ -92,6 +93,7 @@ namespace ArcCreate.Gameplay.Audio
 
             Application.focusChanged -= OnFocusChange;
             gameplayData.EnablePracticeMode.OnValueChange -= SetPracticeMode;
+            gameplayData.AudioClip.OnValueChange -= OnClipChange;
 
             if (Application.platform == RuntimePlatform.IPhonePlayer
              || Application.platform == RuntimePlatform.Android)
@@ -188,6 +190,24 @@ namespace ArcCreate.Gameplay.Audio
             practiceMenu.gameObject.SetActive(enable);
             practiceTimingControl.gameObject.SetActive(enable);
             pauseControl.SetActive(!enable);
+            PrepareWaveform();
+        }
+
+        private void OnClipChange(AudioClip clip)
+        {
+            PrepareWaveform();
+        }
+
+        /// <summary>
+        /// The practice menu is inactive until the first pause, so it cannot build its waveform
+        /// texture itself at load time. Doing it here hides the cost behind the scene transition.
+        /// </summary>
+        private void PrepareWaveform()
+        {
+            if (gameplayData.EnablePracticeMode.Value && gameplayData.AudioClip.Value != null)
+            {
+                practiceMenu.PrepareWaveform(gameplayData.AudioClip.Value);
+            }
         }
     }
 }

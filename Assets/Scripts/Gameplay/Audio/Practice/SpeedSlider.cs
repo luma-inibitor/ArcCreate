@@ -34,6 +34,14 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         public void OnDrag(PointerEventData ev)
         {
+            // A drag that began on the - or + button reaches the slider because buttons do not handle drags.
+            // Ignore it, so a finger that slips while tapping a button does not jump the speed.
+            // pointerPress is cleared once the drag starts, so check what the press originally hit.
+            if (StartedOnButton(ev))
+            {
+                return;
+            }
+
             if (Time.realtimeSinceStartup < lastDown + ClickDuration)
             {
                 return;
@@ -86,12 +94,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
 
         private void IncrementSpeed()
         {
-            if (Value <= AbsoluteMin)
-            {
-                SetValue(Increment);
-            }
-
-            float newValue = Mathf.Round(Value / Increment + 1) * Increment;
+            float newValue = Value <= AbsoluteMin
+                ? Increment
+                : Mathf.Round(Value / Increment + 1) * Increment;
             SetValue(Mathf.Clamp(newValue, AbsoluteMin, MaxValue));
         }
 
@@ -105,6 +110,14 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             fillRect.anchorMin = new Vector2(0, 0);
             fillRect.anchorMax = new Vector2(value / MaxValue, 1);
+        }
+
+        private bool StartedOnButton(PointerEventData ev)
+        {
+            GameObject pressed = ev.pointerPressRaycast.gameObject;
+            return pressed != null
+                && (pressed.transform.IsChildOf(incrementButtton.transform)
+                    || pressed.transform.IsChildOf(decrementButtton.transform));
         }
     }
 }
