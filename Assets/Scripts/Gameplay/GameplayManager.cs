@@ -154,5 +154,18 @@ namespace ArcCreate.Gameplay
 
             gameplayData.NotifyUpdate(currentTiming);
         }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused)
+            {
+                PlayLog.Flush();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            PlayLog.End();
+        }
     }
 }
