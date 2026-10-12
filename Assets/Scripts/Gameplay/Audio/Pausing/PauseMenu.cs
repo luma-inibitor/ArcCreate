@@ -161,6 +161,7 @@ namespace ArcCreate.Gameplay.Audio
         private void OnRetryButton()
         {
             Values.RetryCount += 1;
+            PlayLog.Retry();
             retryCount.Value = TextFormat.FormatRetryCount(Values.RetryCount + 1);
             pauseScreen.SetActive(false);
             Services.Judgement.RefreshInputHandler();

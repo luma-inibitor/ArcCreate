@@ -145,6 +145,7 @@ namespace ArcCreate.Gameplay.Data
             Services.Particle.PlayTapParticle(new Vector3(WorldX, WorldY) + judgeOffset, result, Sfx != "none" && Sfx != "");
             Services.Particle.PlayTextParticle(new Vector3(WorldX, WorldY) + judgeOffset, result, offset);
             Services.Score.ProcessJudgement(TimingGroup, result, offset);
+            PlayLog.Judge(this, result, offset);
             isHit = true;
 
             if (!result.IsMiss())

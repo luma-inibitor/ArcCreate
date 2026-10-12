@@ -82,7 +82,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         public void JumpToLoopStart()
         {
             loop.ResetTracking();
-            Restart();
+            Restart("jump");
         }
 
         private static string FormatSpeed(float speed) => speed.ToString("f2") + "x";
@@ -192,6 +192,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         {
             loop.LeadIn = mode;
             UpdateLeadInButtons();
+            PlayLog.Loop(loop.Enabled, loop.From, loop.To, loop.LeadIn.ToString());
         }
 
         private void UpdateLeadInButtons()
@@ -212,6 +213,7 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void UpdateRepeatRange()
         {
             timeline.SetRepeatRange(loop.Enabled, loop.From, loop.To);
+            PlayLog.Loop(loop.Enabled, loop.From, loop.To, loop.LeadIn.ToString());
         }
 
         private void CheckRepeat(int chartTiming)
@@ -219,14 +221,16 @@ namespace ArcCreate.Gameplay.Audio.Practice
             int timing = Services.Audio.AudioTiming;
             if (loop.ShouldRestart(timing, Services.Audio.IsPlaying) || (loop.ReachedEnd(timing) && !gameObject.activeInHierarchy))
             {
-                Restart();
+                Restart("wrap");
             }
         }
 
-        private void Restart()
+        private void Restart(string kind)
         {
+            int delay = RestartDelay();
+            PlayLog.LoopWrap(kind, loop.From, loop.To, delay);
             Services.Audio.Pause();
-            Services.Audio.PlayWithDelay(loop.From, RestartDelay());
+            Services.Audio.PlayWithDelay(loop.From, delay);
         }
 
         /// <summary>
@@ -235,7 +239,9 @@ namespace ArcCreate.Gameplay.Audio.Practice
         private void RestartFromPause()
         {
             loop.ResetTracking();
-            pauseMenu.ResumeAt(loop.From, RestartDelay());
+            int delay = RestartDelay();
+            PlayLog.LoopWrap("restart_button", loop.From, loop.To, delay);
+            pauseMenu.ResumeAt(loop.From, delay);
         }
 
         private int RestartDelay()

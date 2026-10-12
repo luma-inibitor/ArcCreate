@@ -35,6 +35,7 @@ namespace ArcCreate.Storage
 
             await UniTask.WhenAll(audioTask, bgTask);
             await UniTask.WaitUntil(() => gameplayControl.IsLoaded);
+            PlayLog.Begin(gameplayData, level.Identifier, chart.ChartPath);
         }
 
         private async UniTask LoadAudio(LevelStorage level, ChartSettings chart)

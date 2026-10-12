@@ -254,6 +254,7 @@ namespace ArcCreate.Gameplay.Data
                 if (isJudgement)
                 {
                     Services.Score.ProcessJudgement(TimingGroup, result, Option<int>.None());
+                    PlayLog.Judge(this, result);
                     if (!spawnedParticleThisFrame)
                     {
                         PlayParticle(result, props.CurrentJudgementOffset);
@@ -271,6 +272,7 @@ namespace ArcCreate.Gameplay.Data
                 if (isJudgement)
                 {
                     Services.Score.ProcessJudgement(TimingGroup, result, Option<int>.None());
+                    PlayLog.Judge(this, result);
                     if (!spawnedParticleThisFrame)
                     {
                         PlayParticle(result, props.CurrentJudgementOffset);

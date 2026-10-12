@@ -103,6 +103,7 @@ namespace ArcCreate.Gameplay.Data
                     }
 
                     Services.Score.ProcessJudgement(TimingGroup, result, Option<int>.None());
+                    PlayLog.Judge(this, result);
                 }
             }
             else if (currentTiming <= EndTiming + Values.HoldMissLateJudgeWindow)
@@ -125,6 +126,7 @@ namespace ArcCreate.Gameplay.Data
                     }
 
                     Services.Score.ProcessJudgement(TimingGroup, result, Option<int>.None());
+                    PlayLog.Judge(this, result);
                 }
             }
         }

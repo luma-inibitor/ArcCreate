@@ -90,6 +90,7 @@ namespace ArcCreate.Gameplay.Audio
             get => audioTiming;
             set
             {
+                PlayLog.Seek(value);
                 audioTiming = value;
                 UpdateSlider(value);
                 if (IsPlaying)
@@ -213,6 +214,7 @@ namespace ArcCreate.Gameplay.Audio
 
         public void Pause()
         {
+            PlayLog.Pause();
             lastPausedTiming = audioTiming;
             audioSource.Stop();
             if (videoPlayer.enabled)
@@ -231,6 +233,7 @@ namespace ArcCreate.Gameplay.Audio
 
         public void Stop()
         {
+            PlayLog.Stop();
             audioSource.Stop();
             if (videoPlayer.enabled)
             {
@@ -289,6 +292,7 @@ namespace ArcCreate.Gameplay.Audio
 
         public void SetResumeAt(int timing)
         {
+            PlayLog.ResumeAt(timing);
             lastPausedTiming = timing;
         }
 
@@ -342,6 +346,7 @@ namespace ArcCreate.Gameplay.Audio
                 delay += -timing;
             }
 
+            PlayLog.Play(timing, delay, resetJudge);
             dspStartPlayingTime = AudioSettings.dspTime + ((double)delay / 1000);
             realStartPlayingTime = Time.realtimeSinceStartup + ((double)delay / 1000);
             startTime = timing + FullOffset;
@@ -399,6 +404,7 @@ namespace ArcCreate.Gameplay.Audio
             playbackSpeed = value;
             audioSource.pitch = value;
             videoPlayer.playbackSpeed = value;
+            PlayLog.Speed(value);
             if (IsPlayingAndNotStationary && (Application.isMobilePlatform || Settings.SyncToDSPTime.Value))
             {
                 Pause();
@@ -426,6 +432,11 @@ namespace ArcCreate.Gameplay.Audio
 
         private void OnAudioEnd()
         {
+            if (!audioEndReported)
+            {
+                PlayLog.AudioEnd();
+            }
+
             if (!audioEndReported && Values.ShouldNotifyOnAudioEnd && !gameplayData.EnablePracticeMode.Value)
             {
                 PlayResult result = Services.Score.GetPlayResult();

@@ -142,6 +142,7 @@ namespace ArcCreate.Gameplay.Data
             Services.Particle.PlayTapParticle(new Vector3(ArcFormula.LaneToWorldX(Lane), 0) + judgeOffset, result, false);
             Services.Particle.PlayTextParticle(new Vector3(ArcFormula.LaneToWorldX(Lane), 0) + judgeOffset, result, offset);
             Services.Score.ProcessJudgement(TimingGroup, result, offset);
+            PlayLog.Judge(this, result, offset);
             isHit = true;
 
             if (!result.IsMiss())
